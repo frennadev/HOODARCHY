@@ -1,0 +1,74 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+
+solc_version = "0.8.28"
+# Robinhood Chain reports ArbOS 61 (ArbSys.arbOSVersion() == 116), well past
+# ArbOS 32 which introduced Cancun support. Verified 2026-07-26.
+evm_version = "cancun"
+
+optimizer = true
+optimizer_runs = 200
+via_ir = false          # flip on only if a contract exceeds the size limit; it is slow
+
+bytecode_hash = "none"  # deterministic bytecode -> reproducible verification
+cbor_metadata = false
+
+ffi = false
+fs_permissions = [{ access = "read", path = "./deployments" }]
+
+ignored_error_codes = []
+
+[profile.default.fuzz]
+runs = 512
+max_test_rejects = 100_000
+
+[profile.default.invariant]
+runs = 256
+depth = 64
+fail_on_revert = false
+
+# Fast loop for local iteration: `FOUNDRY_PROFILE=lite forge test`
+[profile.lite]
+optimizer = false
+fuzz = { runs = 32 }
+invariant = { runs = 8, depth = 16 }
+
+# Pre-audit / CI-nightly: crank everything up.
+[profile.deep]
+fuzz = { runs = 50_000 }
+invariant = { runs = 2_000, depth = 256 }
+
+[profile.ci]
+fuzz = { runs = 5_000 }
+invariant = { runs = 500, depth = 96 }
+verbosity = 3
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+[rpc_endpoints]
+rh_mainnet = "${RH_MAINNET_RPC_URL}"
+rh_testnet = "${RH_TESTNET_RPC_URL}"
+
+[etherscan]
+# Robinhood Chain uses Blockscout. Verify with:
+#   forge verify-contract <addr> <Contract> --chain 4663 --verifier blockscout \
+#     --verifier-url https://robinhoodchain.blockscout.com/api
+rh_mainnet = { key = "${BLOCKSCOUT_API_KEY}", chain = 4663, url = "https://robinhoodchain.blockscout.com/api" }
+rh_testnet = { key = "${BLOCKSCOUT_API_KEY}", chain = 46630, url = "https://explorer.testnet.chain.robinhood.com/api" }
+
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+quote_style = "double"
+number_underscore = "preserve"
+# "params_first" forces every single-argument function onto three lines.
+# "attributes_first" only wraps when the header actually exceeds line_length.
+multiline_func_header = "attributes_first"
+sort_imports = true

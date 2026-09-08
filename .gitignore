@@ -1,0 +1,37 @@
+# --- secrets -----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+keystore/
+
+# --- foundry -----------------------------------------------------------------
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/broadcast/
+!packages/contracts/broadcast/**/dry-run/
+packages/contracts/lib/
+docs-gen/
+
+# --- node --------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+lcov.info
+*.tsbuildinfo
+
+# --- indexer -----------------------------------------------------------------
+.ponder/
+generated/
+
+# --- editors / os ------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.log

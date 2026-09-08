@@ -1,0 +1,17 @@
+{
+  "name": "@capital-dao/chain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Verified Robinhood Chain network definitions and contract addresses. Single source of truth for contracts, web, and indexer.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "node scripts/verify-addresses.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}
