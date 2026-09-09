@@ -37,34 +37,33 @@ don't get that fix automatically. We accept that — it's the price of safety.
 
 ---
 
-## D3 — We are **not** building on Uniswap V4, because V4 is not on the chain
+## D3 — ~~We are not building on Uniswap V4~~ **CORRECTED: V4 is on the chain**
 
-**Decided:** Do not build on Uniswap V4.
+> **This decision was wrong and is withdrawn.** Superseded by D15. Kept here
+> rather than deleted, because the reasoning error is worth remembering.
 
-**Why:** You asked for V4. I checked the live chain rather than assume, and V4
-simply isn't deployed on Robinhood Chain:
+**What I originally decided:** Do not build on Uniswap V4, on the grounds that
+it isn't deployed on Robinhood Chain.
 
-- Both addresses Uniswap normally uses for V4 are **empty**
-- I also checked the V4 addresses from twelve other chains (Ethereum, Base,
-  Arbitrum, Optimism, Polygon, BNB, Avalanche, Unichain, Blast, Worldchain, Ink,
-  Zora) — **all empty**
-- Your own July investigation found the same thing
+**Why that was wrong:** I checked 14 addresses — the 2 Uniswap normally uses,
+plus the V4 addresses from 12 other chains — found all of them empty, and
+concluded V4 was absent. **That method cannot prove absence.** Uniswap V4 is
+deployed to a different address on every chain, so "not at any address I happened
+to know" was never evidence of "not deployed". You said V4 had the most volume on
+Robinhood Chain, and you were right.
 
-What *is* live, checked at block 57,906,854:
+**Where it actually is** (verified live, and cross-checked — the PositionManager's
+`poolManager()` points back at the PoolManager, so these are genuinely a matched
+pair, not two unrelated contracts):
 
-| | Status |
-| --- | --- |
-| Uniswap V2 | Live — **41,375 trading pairs** |
-| Uniswap V3 | Live and deep — the main USDG/WETH pool holds **5,510 WETH** |
-| Uniswap V4 | **Not deployed** |
+| | Address | Size |
+| --- | --- | --- |
+| V4 PoolManager | `0x8366a39CC670B4001A1121B8F6A443A643e40951` | 48,021 bytes |
+| V4 PositionManager | `0x58daec3116aae6D93017bAAea7749052E8a04fA7` | 47,757 bytes |
 
-**Cost:** V4's "hooks" feature would have been an elegant way to build this. We
-lose that. See D4 for how we get the same result without it.
-
-**If this changes:** If V4 ships on Robinhood Chain later, D4 is designed so we
-can move to it without redesigning anything.
-
----
+**How I found out:** Capital DAO migrated itself to V4 and recorded the addresses.
+I should have looked at how the chain's own ecosystem deploys, rather than
+pattern-matching addresses from other chains.
 
 ## D4 — We are **not** writing our own AMM. We use real Uniswap pools plus a small
 separate "price recorder"
@@ -313,3 +312,48 @@ shared liquidity, and the launchpad. Those come next, in that order.
 **Why this order:** These two pieces are the ones where a mistake loses money or
 lets someone steal a decision. Everything after them is orchestration built on
 top. Getting these right first means the rest can't be built on sand.
+
+---
+
+## D15 — The oracle no longer knows which Uniswap version it is reading
+
+**Decided:** Split the price recorder in two. The recorder itself now takes a
+**price source** — a tiny read-only contract whose only job is to answer "what is
+the price right now?". Today there's a Uniswap V2 source; a V4 one drops in
+without touching the recorder.
+
+**Why:** D3 was wrong about V4, which means D5 (which pool to use) is now a real
+open question rather than a forced one. Rather than guess again, I removed the
+need to guess: the part that carries the security — the rate-limiting and
+time-weighting — no longer cares which AMM is underneath.
+
+**Why this matters beyond the mistake:** The security argument for this design is
+that the recorder holds no money and is small enough to reason about. Welding it
+to one AMM version would have meant re-auditing that security core every time the
+pool choice changed. Now the pool choice is a swappable part, and the piece that
+must be correct stays still.
+
+**Cost:** One extra contract and one extra external call per price read. Trivial.
+
+**Status of D5 (V2 vs V4 for the pass/fail pools):** **now genuinely open.** In
+V4's favour: it's where the chain's volume is, Capital DAO just moved there, and
+V4 "hooks" let a pool update the recorder automatically on every trade instead of
+waiting to be poked. Against it: V4 is newer and more complex than V2, and the
+shared-liquidity trick in D5 — splitting a normal pool's two token piles into the
+two conditional markets — is straightforward in V2 and needs rethinking in V4.
+All 28 tests pass either way, so this can be decided on merit rather than urgency.
+
+---
+
+## D16 — Capital DAO moved to V4; our notes on it are now historical
+
+**Decided:** Record that Capital DAO migrated from Uniswap V2 to V4, and stop
+describing its V2 usage as current.
+
+**Why:** Several of our notes cited "Capital DAO seeds V2 pools in production" as
+the proof that V2 was live here. That proof is now historical — still true that V2
+exists, but Capital DAO no longer uses it.
+
+**What did not change:** The security lessons we inherited from the Capital DAO
+audit (D7 especially — absorb a donation rather than reject it) are about
+*predictable addresses*, which V4 has too. They still apply in full.

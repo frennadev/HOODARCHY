@@ -4,8 +4,9 @@
 > outlive any individual work session. If something here goes stale, edit it —
 > do not fork it into a second document.
 >
-> Status: design locked, no mechanism contracts written yet.
-> Last verified against chain: 2026-09-08.
+> Status: conditional vault and lagged-price oracle built and tested (28 tests).
+> Governor, Executor, pool seeding and launchpad still to come.
+> Last verified against chain: 2026-09-09.
 
 ---
 
@@ -48,22 +49,28 @@ Explorer: https://robinhoodchain.blockscout.com
 | L2 Multicall | `0x2cAC2D899eCC914d704FeaAE33ac1bF36277DaD1` | probed |
 | Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` | probed |
 | ArbSys precompile | `0x0000000000000000000000000000000000000064` | probed |
-| **Uniswap V2 factory** | `0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f` | **confirmed in production** |
-| **Uniswap V2 router** | `0x89e5DB8B5aA49aA85AC63f691524311AEB649eba` | **confirmed in production** |
+| Uniswap V2 factory | `0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f` | confirmed live, 41,375 pairs |
+| Uniswap V2 router | `0x89e5DB8B5aA49aA85AC63f691524311AEB649eba` | confirmed live |
 | Uniswap V3 factory | `0x1f7d7550B1b028f7571E69A784071F0205FD2EfA` | probed |
 | Uniswap V3 SwapRouter02 | `0xCaf681a66D020601342297493863E78C959E5cb2` | probed |
 | Uniswap V3 UniversalRouter | `0x8876789976dEcBfCbBbe364623C63652db8C0904` | probed |
 | Uniswap V3 PositionManager | `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` | probed |
 | Uniswap V3 QuoterV2 | `0x33e885eD0Ec9bF04EcfB19341582aADCb4c8A9E7` | probed |
-| Uniswap V4 PoolManager | **not found** | probed, absent at canonical addresses |
+| **Uniswap V4 PoolManager** | `0x8366a39CC670B4001A1121B8F6A443A643e40951` | **confirmed live** — non-canonical address |
+| **Uniswap V4 PositionManager** | `0x58daec3116aae6D93017bAAea7749052E8a04fA7` | confirmed; `poolManager()` points back |
 | Chainlink feeds | **unconfirmed** | blocking for the Stock-Token metric (§5.6 template B) |
 
-> **Correction to `packages/chain/src/addresses.ts`.** That file was probed on
-> 2026-07-26 and records V3 only, noting V2/V4 as unconfirmed marketing claims.
-> **Uniswap V2 is confirmed present and in production use** — the Capital DAO
-> raise factory at `0x31876B5F966B88E288a010B5c187e14c48cA8868` seeds V2 pools
-> on mainnet through the router above. Update `addresses.ts` and
-> `src/config/RobinhoodChain.sol` to add the V2 entries.
+> **Uniswap V4 IS deployed here**, at a non-canonical address that a probe of
+> other chains' addresses will never find. An earlier note in this file claimed
+> otherwise; see decision D3 for why that reasoning was invalid. Capital DAO has
+> since migrated itself from V2 to V4, which is how the address surfaced.
+>
+> **All three Uniswap versions are live here.** The 2026-07-26 probe recorded V3
+> only. V2 is confirmed (41,375 pairs) and V4 is confirmed at the non-canonical
+> address above. `addresses.ts` and `src/config/RobinhoodChain.sol` are updated.
+>
+> Capital DAO used V2 in production until 2026-09; it has since migrated to V4,
+> so cite it as evidence that V2 *exists*, not that it is the chain's default.
 
 ### Testnet — chain ID `46630`
 Explorer: https://explorer.testnet.chain.robinhood.com
@@ -78,7 +85,9 @@ Explorer: https://explorer.testnet.chain.robinhood.com
 
 Capital DAO raise factory `0x31876B5F966B88E288a010B5c187e14c48cA8868`,
 operator Safe `0x2D1b91b7089471CD2d828b4f59081a9b38Cd136d` (2-of-3),
-fee recipient `0x64d352e845155265E6C4c58Ef82C6f3bDa50a177`.
+fee recipient `0x64d352e845155265E6C4c58Ef82C6f3bDa50a177`. Migrated from
+Uniswap V2 to V4 in 2026-09; the factory address above predates that migration,
+so re-read its deployment record before citing it.
 
 ---
 
@@ -260,7 +269,7 @@ Governance is the enforcement mechanism for the raise.
 | USDC quote | USDG is native, 6 dp | Quote = USDG everywhere. Scale explicitly. |
 | Token price = welfare | Stock Tokens + Chainlink exist here | Allow metric ∈ {project token, Stock Token, USDG-NAV vault share} |
 | Squads | Safe is the EVM equivalent | Safe + Zodiac; futarchy module is the only exec role |
-| Custom AMM / OpenBook | Uniswap V2 **and** V3 already deployed | Do **not** fork Uniswap for spot. Custom pair **only** for conditional pools, so the lagged oracle is embedded |
+| Custom AMM / OpenBook | Uniswap V2, V3 **and V4** all deployed | Do **not** fork Uniswap at all. The lagged oracle is an external read-only contract behind a swappable price source (D15), so no custom AMM is needed for any version |
 | 3-day window | 100ms blocks, retail + agents | Keep 3 days. Optional 1-day "agent sprint" market type later |
 | Permissionless L1 | Permissionless L2, but Stock Tokens have issuer constraints | Kernel/growth split — futarchy must not touch Stock Token custody or settlement |
 

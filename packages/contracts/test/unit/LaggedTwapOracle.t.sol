@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 
 import {LaggedTwapOracle} from "../../src/oracle/LaggedTwapOracle.sol";
+import {UniswapV2PriceSource} from "../../src/oracle/sources/UniswapV2PriceSource.sol";
 import {MockV2Pair} from "../mocks/MockV2Pair.sol";
 
 /// @notice The manipulation tests. If an attacker can move the settled average
@@ -28,7 +29,9 @@ contract LaggedTwapOracleTest is Test {
         vm.warp(1_000_000);
         pair = new MockV2Pair(BASE, QUOTE);
         _setPrice(ONE);
-        oracle = new LaggedTwapOracle(address(pair), BASE, RATE, DELAY, MAX_STEP_ELAPSED);
+        oracle = new LaggedTwapOracle(
+            address(new UniswapV2PriceSource(address(pair), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+        );
         oracle.start(ONE);
     }
 
@@ -170,8 +173,9 @@ contract LaggedTwapOracleTest is Test {
     function test_StartAnchorsThePriceRatherThanReadingADustedPool() public {
         MockV2Pair fresh = new MockV2Pair(BASE, QUOTE);
         fresh.setReserves(uint112(1e18), uint112(999_999e18)); // dusted to a silly price
-        LaggedTwapOracle o =
-            new LaggedTwapOracle(address(fresh), BASE, RATE, DELAY, MAX_STEP_ELAPSED);
+        LaggedTwapOracle o = new LaggedTwapOracle(
+            address(new UniswapV2PriceSource(address(fresh), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+        );
 
         o.start(ONE); // anchor is supplied, not read
         assertEq(o.observation(), ONE);
@@ -181,8 +185,9 @@ contract LaggedTwapOracleTest is Test {
     }
 
     function test_PokeBeforeStartReverts() public {
-        LaggedTwapOracle o =
-            new LaggedTwapOracle(address(pair), BASE, RATE, DELAY, MAX_STEP_ELAPSED);
+        LaggedTwapOracle o = new LaggedTwapOracle(
+            address(new UniswapV2PriceSource(address(pair), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+        );
         vm.expectRevert(LaggedTwapOracle.NotStarted.selector);
         o.poke();
     }

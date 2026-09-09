@@ -72,12 +72,13 @@ library RobinhoodChain {
     // Unverified — resolve before use
     // -------------------------------------------------------------------------
 
-    /// @dev Uniswap v4 is NOT deployed on this chain. Re-probed 2026-09-08 at
-    ///      block 57,906,854: both canonical PoolManager addresses are empty,
-    ///      and so are the twelve known PoolManager addresses from Ethereum,
-    ///      Unichain, Base, Arbitrum, Optimism, Polygon, BNB, Avalanche, Blast,
-    ///      Worldchain, Ink and Zora. Left zero on purpose.
-    address internal constant UNIV4_POOL_MANAGER = address(0);
+    /// @dev Uniswap v4 IS deployed here, at a non-canonical address. Probing the
+    ///      canonical addresses (and other chains' addresses) finds nothing,
+    ///      because v4 uses a different address on every chain — absence there
+    ///      proves nothing. Verified 2026-09-09: PositionManager.poolManager()
+    ///      returns POOL_MANAGER, so the two are a matched deployment.
+    address internal constant UNIV4_POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
+    address internal constant UNIV4_POSITION_MANAGER = 0x58daec3116aae6D93017bAAea7749052E8a04fA7;
 
     /// @dev Chainlink feed addresses are not yet confirmed on this chain.
     ///      Market settlement depends on this; resolving it is a blocking task.

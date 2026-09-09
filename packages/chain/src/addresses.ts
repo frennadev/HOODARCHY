@@ -74,27 +74,19 @@ export const uniswapV2 = {
 } as const;
 
 /**
- * ⚠️ NOT DEPLOYED — do not design against this.
+ * ✅ CONFIRMED LIVE — 2026-09-09, at a NON-CANONICAL address.
  *
- * Ecosystem marketing says Robinhood Chain ships "Uniswap v2, v3, v4 and
- * UniswapX from day one". v2 and v3 are real (above). v4 is not.
+ * The 2026-07-26 note concluded v4 was absent after probing the two canonical
+ * PoolManager addresses. That conclusion was invalid: v4 deploys to a different
+ * address on every chain, so absence at known addresses proves nothing.
  *
- * Re-probed 2026-09-08 at block 57,906,854. Empty at both canonical
- * PoolManager addresses:
- *   0x000000000004444c5dc75cB358380D2e3dE08A90  -> empty
- *   0x1F98400000000000000000000000000000000004  -> empty
- * ...and empty at the twelve known PoolManager addresses from Ethereum,
- * Unichain, Base, Arbitrum, Optimism, Polygon, BNB, Avalanche, Blast,
- * Worldchain, Ink and Zora.
- *
- * RH Futarchy therefore does not depend on v4 hooks. The lagged-observation
- * oracle is an external contract reading a v2 pair (decision D4), which gives
- * the same protection and would port to a v4 hook unchanged if v4 ever ships.
+ * Verified: PositionManager.poolManager() returns the PoolManager below, so the
+ * two are a matched deployment rather than unrelated bytecode.
  */
 export const uniswapV4 = {
-  POOL_MANAGER: null,
-  POSITION_MANAGER: null,
-  STATE_VIEW: null,
+  POOL_MANAGER: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  POSITION_MANAGER: "0x58daec3116aae6D93017bAAea7749052E8a04fA7",
+  STATE_VIEW: null, // not yet located
 } as const;
 
 /**

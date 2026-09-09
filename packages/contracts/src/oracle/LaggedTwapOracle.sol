@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
-import {IUniswapV2Pair} from "../interfaces/IUniswapV2Pair.sol";
+import {IPriceSource} from "../interfaces/IPriceSource.sol";
 
 /// @title LaggedTwapOracle
 /// @notice Records a deliberately slow price for one Uniswap V2 pair, and
@@ -47,10 +45,9 @@ contract LaggedTwapOracle {
     /// @notice Price is expressed as quote units per WAD of base.
     uint256 internal constant WAD = 1e18;
 
-    /// @notice The pair whose reserves are being watched.
-    IUniswapV2Pair public immutable PAIR;
-    /// @notice The token treated as "base" (the thing being priced).
-    address public immutable BASE;
+    /// @notice Where spot comes from. Swappable, so the Uniswap version in use
+    ///         is not a property of the security core.
+    IPriceSource public immutable SOURCE;
     /// @notice How far the observation may move per second, in WAD price units.
     uint256 public immutable MAX_CHANGE_PER_SECOND;
     /// @notice Observations do not enter the average until this long after start.
@@ -68,20 +65,15 @@ contract LaggedTwapOracle {
     uint64 public twapActiveFrom;
 
     constructor(
-        address pair_,
-        address base_,
+        address source_,
         uint256 maxChangePerSecond_,
         uint64 delay_,
         uint64 maxStepElapsed_
     ) {
-        if (pair_ == address(0) || base_ == address(0)) revert ZeroAddress();
+        if (source_ == address(0)) revert ZeroAddress();
         if (maxChangePerSecond_ == 0 || maxStepElapsed_ == 0) revert InvalidConfig();
 
-        IUniswapV2Pair p = IUniswapV2Pair(pair_);
-        if (p.token0() != base_ && p.token1() != base_) revert InvalidConfig();
-
-        PAIR = p;
-        BASE = base_;
+        SOURCE = IPriceSource(source_);
         MAX_CHANGE_PER_SECOND = maxChangePerSecond_;
         DELAY = delay_;
         MAX_STEP_ELAPSED = maxStepElapsed_;
@@ -157,13 +149,9 @@ contract LaggedTwapOracle {
         return acc / uint256(nowTs - from);
     }
 
-    /// @notice Instantaneous price from the pair reserves, in quote per WAD base.
+    /// @notice Instantaneous price from the configured source.
     function spotPrice() public view returns (uint256) {
-        (uint112 r0, uint112 r1,) = PAIR.getReserves();
-        if (r0 == 0 || r1 == 0) return 0;
-        (uint256 baseReserve, uint256 quoteReserve) =
-            PAIR.token0() == BASE ? (uint256(r0), uint256(r1)) : (uint256(r1), uint256(r0));
-        return Math.mulDiv(quoteReserve, WAD, baseReserve);
+        return SOURCE.spotPrice();
     }
 
     /// @dev Credits [max(from, twapActiveFrom), to) at the current observation.
