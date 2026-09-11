@@ -102,7 +102,7 @@ contract SafeExecutorForkTest is BaseTest {
     }
 
     function _hash(FutarchyExecutor.Call[] calldata calls) external view returns (bytes32) {
-        return executor.hashActions(PID, calls);
+        return executor.hashActions(calls);
     }
 
     function _approve(FutarchyExecutor.Call[] memory calls) internal {
@@ -196,7 +196,7 @@ contract SafeExecutorForkTest is BaseTest {
             value: 0,
             data: abi.encodeCall(IERC20.transfer, (recipient, 1e6))
         });
-        governor.approve(stray.hashActions(PID, calls));
+        governor.approve(this._hash(calls));
 
         assertFalse(stray.isEnabled());
         vm.expectRevert();

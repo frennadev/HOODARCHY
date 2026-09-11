@@ -64,15 +64,11 @@ contract FutarchyExecutorTest is Test {
 
     /// @dev `hashActions` takes calldata, so route through an external call.
     function _hash(FutarchyExecutor.Call[] memory calls) internal view returns (bytes32) {
-        return this.hashHelper(PID, calls);
+        return this.hashHelper(calls);
     }
 
-    function hashHelper(bytes32 pid, FutarchyExecutor.Call[] calldata calls)
-        external
-        view
-        returns (bytes32)
-    {
-        return executor.hashActions(pid, calls);
+    function hashHelper(FutarchyExecutor.Call[] calldata calls) external view returns (bytes32) {
+        return executor.hashActions(calls);
     }
 
     // ------------------------------------------------------------ happy path
@@ -201,17 +197,23 @@ contract FutarchyExecutorTest is Test {
         assertEq(usdg.balanceOf(recipient), 50_000e6, "paid out twice");
     }
 
-    /// @dev A batch approved for one proposal must not run under another, even
-    ///      though the calls are byte-identical — the proposal id is hashed in.
-    function test_ATTACK_BatchApprovedForOneProposalCannotRunUnderAnother() public {
-        FutarchyExecutor.Call[] memory calls = _payout(50_000e6);
-        _approve(calls);
+    /// @dev The binding that matters. A batch cannot run under a proposal that
+    ///      approved a *different* batch — which is the case an attacker would
+    ///      actually try, swapping a payout into a proposal the market passed
+    ///      for something else.
+    function test_ATTACK_BatchCannotRunUnderAProposalThatApprovedSomethingElse() public {
+        FutarchyExecutor.Call[] memory payout = _payout(900_000e6);
 
         bytes32 other = keccak256("proposal-2");
-        governor.approve(other, _hash(calls)); // same hash, different proposal
+        governor.approve(other, _hash(_payout(1e6))); // approved a tiny payout
 
-        vm.expectRevert(); // WrongActions: the id is part of the fingerprint
-        executor.execute(other, calls);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                FutarchyExecutor.WrongActions.selector, _hash(_payout(1e6)), _hash(payout)
+            )
+        );
+        executor.execute(other, payout);
+        assertEq(usdg.balanceOf(recipient), 0);
     }
 
     function test_UnapprovedProposalCannotExecute() public {

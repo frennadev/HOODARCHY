@@ -93,7 +93,7 @@ contract FutarchyExecutor {
         (bool approved, bytes32 expected) = GOVERNOR.executionApproval(proposalId);
         if (!approved) revert NotApproved(proposalId);
 
-        bytes32 provided = hashActions(proposalId, calls);
+        bytes32 provided = hashActions(calls);
         if (provided != expected) revert WrongActions(expected, provided);
 
         if (executed[proposalId]) revert AlreadyExecuted(proposalId);
@@ -117,11 +117,24 @@ contract FutarchyExecutor {
         emit Executed(proposalId, expected, calls.length);
     }
 
-    /// @notice The fingerprint binding a proposal to one exact batch.
-    /// @dev The proposal id is inside the hash, so a batch approved for one
-    ///      proposal cannot be replayed under another.
-    function hashActions(bytes32 proposalId, Call[] calldata calls) public pure returns (bytes32) {
-        return keccak256(abi.encode(proposalId, calls));
+    /// @notice The fingerprint of one exact batch.
+    ///
+    /// @dev The proposal id is deliberately **not** part of this hash, and the
+    ///      reason is worth recording because the first version got it wrong.
+    ///      Binding the id in looks stricter, but a proposal's id is derived
+    ///      from the actions hash it was submitted with — so computing one
+    ///      requires the other, and neither can be produced first. The stricter
+    ///      hash was simply impossible to use.
+    ///
+    ///      Nothing is lost. The binding that matters is the Governor's, which
+    ///      records one hash per proposal; this contract only checks that the
+    ///      batch it was handed is the batch that proposal recorded. Reusing a
+    ///      batch under a second proposal requires that proposal to have passed
+    ///      with the same hash — which is the market authorising it again, not
+    ///      an attacker replaying it. Replay *within* a proposal is stopped by
+    ///      `executed`.
+    function hashActions(Call[] calldata calls) public pure returns (bytes32) {
+        return keccak256(abi.encode(calls));
     }
 
     /// @notice Whether the Safe has actually granted this module its powers.

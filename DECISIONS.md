@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (98 tests passing — 77 unit, 21 against the live chain):**
+**Built and tested (121 tests passing — 100 unit, 21 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -676,3 +676,68 @@ design. If the Governor is ever broken and no proposal can pass, the money is
 stuck. That is the deal — D10 said it plainly, and it is the product.
 
 **98 tests pass.**
+
+---
+
+## D22 — The Governor, and the first proposal that runs end to end
+
+**Decided:** Build the Governor as the single piece that owns the proposal
+lifecycle — take the stake, open the two markets, run the clock, compare the two
+settled prices, resolve the vault, unlock the Executor. Everything else already
+existed; nothing was connected until this.
+
+**The system now works end to end.** Two tests run a whole proposal: submitted,
+markets opened, traded by someone with real money at stake, clock run out,
+finalised, and the treasury pays a contributor — with no human signature anywhere
+in the path. The mirror test runs the same proposal against a market that says no
+and confirms nothing moves. That is the product, demonstrated rather than
+described.
+
+**Choices worth recording:**
+
+**The Governor builds its own vault.** The vault answers only to its governor, and
+that address is fixed when the vault is built — so whoever creates the vault
+decides who controls it. Passing an address in leaves a gap where the wrong one
+could be supplied. Creating it in the constructor closes that by construction.
+
+**One seed funds both books.** Splitting `X` of the project token yields `X`
+pass-tokens *and* `X` fail-tokens, so a single deposit opens both markets to
+equal depth rather than dividing one pot in two. This is the property that makes
+the fail market — usually the thin one, and the one §6.3.2 warns is as attackable
+as the pass side — just as deep as the pass market from the first second.
+
+**No parameter is settable.** Windows, the margin, the stake, the rate limit are
+all fixed at deployment. §6.3.3 warns that a proposal setting the margin to -100%
+makes everything after it pass automatically, and that a timelock only postpones
+that. The simplest answer to a system that can rewrite its own rules is one that
+cannot. When parameters do become changeable, they need hard bounds in code
+first — a delay is the second line, never the first.
+
+**The guardian can stop a proposal and nothing else.** Cancelling a live proposal
+resolves it to Fail, which is the honest reading — the instruction did not
+happen. It is a real power, and worth naming: anyone holding the pass side loses.
+The alternative, leaving the question open forever, strands anyone holding only
+one side, which is worse. A test asserts the guardian cannot make anything pass.
+
+**Seed capital comes back.** Without `reclaimSeed`, the money that opens the
+markets is locked forever and nobody funds a second proposal.
+
+### A design flaw the end-to-end test caught
+
+The Executor originally hashed the proposal id together with the batch, which
+looks stricter. It is impossible: a proposal's id is derived from the actions
+hash it was submitted with, so computing either requires the other. Nothing could
+ever have been executed. Writing a test that ran the real sequence surfaced it
+immediately; every unit test passed happily because each side was mocked.
+
+The fix drops the id from the hash. Nothing is lost — the Governor records one
+hash per proposal and the Executor checks the batch matches *that* proposal's
+hash, so a batch still cannot be swapped into a proposal that approved something
+else. Replay within a proposal is stopped separately.
+
+**Cost:** `MarketFactory` exists for a dull reason — a contract that deploys
+another carries its full creation code, and four of those would push the Governor
+past the 24KB limit. It is a size workaround, not a design idea, and it is worth
+knowing that so nobody looks for deeper meaning in it.
+
+**121 tests pass.**

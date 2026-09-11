@@ -5,7 +5,7 @@
 > do not fork it into a second document.
 >
 > Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (98 tests). Per-proposal conditional pools are our own CPMM, ported
+> and tested (121 tests). The full lifecycle runs end to end. Per-proposal conditional pools are our own CPMM, ported
 > from MetaDAO per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
@@ -346,25 +346,35 @@ inventory merges back. Traders see deep books; LPs do not have to choose which
 universe to underwrite. **This is the difference between a toy and something
 that can price a $2M treasury spend.**
 
-### 5.3 Governor
+### 5.3 Governor — **BUILT (D22)**
+
+`FutarchyGovernor`. The lifecycle, in four moments:
 
 ```solidity
-initializeProposal(bytes32 descriptionHash, bytes actions, bool teamSponsored)
-stake(proposalId, tokenAmount)
-launch(proposalId)      // requires stake >= baseToStake
-finalize(proposalId)    // after WINDOW; compares TWAPs
+propose(bytes32 descriptionHash, bytes32 actionsHash, bool teamSponsored)
+launch(bytes32 proposalId, uint256 seedBase, uint256 seedQuote)
+finalize(bytes32 proposalId)          // after DELAY + WINDOW, by timestamp
+cancel(bytes32 proposalId)            // guardian, or proposer before launch
+reclaimSeed(bytes32 proposalId)       // seed capital back after resolution
 ```
 
-Pass rule — copy MetaDAO unless we have a reason not to:
+Pass rule, as MetaDAO:
 
 ```
-τ    = teamSponsored ? -0.03 : +0.03
-pass = twap_pass > twap_fail * (1 + τ)
+pass = twap_pass > twap_fail * (teamSponsored ? 0.97 : 1.03)
 ```
 
-`actions` is an encoded Safe transaction batch. **The Governor never executes
-arbitrary bytecode from the proposer.** It sets `proposal.passed` and enables the
-Executor to run *that exact batch*, bound by hash.
+The Governor builds its own `ConditionalVault` in its constructor, so the vault's
+governor is this contract by construction rather than by a correctly-supplied
+argument. `actions` never touches the chain until execution: the Governor stores
+only the hash and the Executor matches it (§5.5).
+
+**Seeding uses one complete set, not two.** Splitting `X` base yields `X` of both
+conditionals, so a single deposit opens the pass and fail books to equal depth —
+which is what stops the fail side being the thin one §6.3.2 warns about.
+
+**No parameter is settable in v1.** See §6.3.3: bounds in code must come before
+configurability, and a timelock is the second line rather than the first.
 
 ### 5.4 Action allowlist — kernel vs growth
 

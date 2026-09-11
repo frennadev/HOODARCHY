@@ -8,6 +8,8 @@
 | `oracle/sources/UniswapV2PriceSource.sol` | Reads spot price from a V2 pair's reserves. |
 | `oracle/sources/UniswapV4PriceSource.sol` | Reads spot price from one V4 pool inside the singleton — used for the **parent/spot** pool. Withholds a price when the pool is empty or mid-transaction. |
 | `amm/ConditionalAmm.sol` | The per-proposal pass/fail market. Constant-product, stored reserves, updates the oracle before every trade. Ported from MetaDAO (D19). |
+| `governance/FutarchyGovernor.sol` | The keystone. Runs a proposal end to end: stake, open the two markets, wait out the clock, compare the settled prices, resolve (D22). |
+| `governance/MarketFactory.sol` | Builds one side's pool and recorder. Exists so the Governor does not carry four contracts' creation code and blow the size limit. |
 | `governance/FutarchyExecutor.sol` | The only thing that can spend a treasury. A Safe module that runs one hash-bound batch, once (D21). |
 | `interfaces/ISafe.sol` | The slice of Safe the module touches, declared locally rather than vendored. |
 | `config/RobinhoodChain.sol` | Verified on-chain addresses. Mirror of `packages/chain/src/addresses.ts`. |
