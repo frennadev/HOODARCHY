@@ -5,7 +5,8 @@
 > do not fork it into a second document.
 >
 > Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (121 tests). The full lifecycle runs end to end. Per-proposal conditional pools are our own CPMM, ported
+> and tested (125 tests). The full lifecycle runs end to end, and the
+> deployment is rehearsed against a real Safe on a forked chain. Per-proposal conditional pools are our own CPMM, ported
 > from MetaDAO per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
