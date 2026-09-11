@@ -678,7 +678,7 @@ underneath so the list stops hiding the real blockers behind settled ones.
 
 | | |
 | --- | --- |
-| This project | `~/Documents/robinhood futurachy` — own git repo, **local only: no remote, nothing pushed anywhere**. Exists on one machine. |
+| This project | `~/Documents/robinhood futurachy`, pushed to **https://github.com/frennadev/HOODARCHY** (public). The folder keeps its old name; see D1. |
 | Contracts | `packages/contracts` (Foundry; forge-std, OZ, OZ-upgradeable, v3-core, v3-periphery, chainlink submodules) |
 | Chain constants | `packages/contracts/src/config/RobinhoodChain.sol` ↔ `packages/chain/src/addresses.ts` — **keep both in sync**, `pnpm chain:check` re-verifies against live RPC |
 | Product docs | `docs/` (16 files, pre-launch drafts, not legally reviewed) |
