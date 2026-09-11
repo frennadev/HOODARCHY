@@ -55,11 +55,11 @@ export const deployments = {
   [CHAIN_ID]: {
     kind: "smoke-test",
     deployedAt: "2026-09-11",
-    governor: "0x597d97EF05f0c6C8D554E7bA9bdb138b42ADD044",
-    vault: "0xd85f0C05D0Ecd4eF649D05310c528873b71b8718",
-    executor: "0x67BE25fBE43AeA5204C15335954932838B5755CA",
-    marketFactory: "0x7962047FE25ef414b9fD83e9e1f0Fb1788820f27",
-    safe: "0xBeB4ED388302Ee7e91B828865Ca8810CA42b693c",
+    governor: "0x1D346cd2d281bb2c07E7803Da98350ECb4e9e3eE",
+    vault: "0xd80DF1C07252dA38C2928DD08D114BE3B92B8659",
+    executor: "0xB469cFdf1B62f9A7dBbb562b471f9bEd982a1Feb",
+    marketFactory: "0xDfE16dDC68aFd064573C68e68163DDE2d0BbbC03",
+    safe: "0xBB9A6D7A932BA7062abd33df0Ea7670d98383e14",
     baseToken: "0xC634E3d67a37E4bc59e3aE6d69e99De5A763eBB0", // FTT, 18dp, throwaway
     quoteToken: "0xC58C3A43B2c3Fa5981222633B9422Ede6B4f53A8", // tUSDG, 6dp, throwaway
     delaySeconds: 60,
@@ -67,6 +67,7 @@ export const deployments = {
     treasuryIsMarketOnly: false,
     caveats: [
       "Smoke test. Throwaway tokens, not real USDG.",
+      "Second deployment; the first is unreadable by current ABIs (see DEPLOYMENTS.md).",
       "Windows compressed to 60s/300s; production is 24h/72h.",
       "Treasury ownership was NOT handed over — a human key can still move funds.",
       "Contracts are unaudited.",
@@ -74,16 +75,29 @@ export const deployments = {
   },
 } as const satisfies Record<number, FutarchyDeployment>;
 
-/** The first proposal ever run end to end, kept as a reference fixture. */
-export const firstProposal = {
+/**
+ * A proposal that ran end to end on this deployment, kept as a fixture for
+ * anyone wiring up a frontend against real data.
+ */
+export const sampleProposal = {
   chainId: CHAIN_ID,
-  id: "0x4d12e83540d009ae1dd0fbc7038e9be81c0f259a2f3e0e332a7df86eee96aab3",
-  passAmm: "0x7827bEF4D4d7d31cC5c52CefE02A4106c735760C",
-  failAmm: "0x225124a2873846aA01361E3638150cFe6D7AeD4E",
-  passOracle: "0xae9Df5D7b65B6b60bf67a7a9Fe3Ce1A155Ab70D8",
-  failOracle: "0x686f2e9B5CE385C897C7EA1cEbCC2BE2028154d7",
-  /** Settled: pass 2_721_374 vs threshold 2_060_000. Passed. */
+  id: "0x360a0080a24fec6f99dd21268414b7d18419c5159fb6aba648357a03a48556e8",
+  passAmm: "0x1DFC1648598182a07e75bD3966d7AE7Cf3f9eC0f",
+  failAmm: "0x7bB88BDBf6bf2685eb72F545bBAD91DA84bC7c96",
+  passOracle: "0x0047779d0a869B2C6602c3Bf54042E6f7C916C21",
+  failOracle: "0x7900BBeB81D7c99E40719cab830613D6101FA8EC",
+  /** Settled: pass 3_246_626 vs threshold 2_060_000. Passed, and paid out. */
   outcome: "passed",
+} as const;
+
+/**
+ * The first deployment, superseded. Adding `descriptionUri` to `Proposed`
+ * changed its topic hash, so nothing built from current ABIs can read the
+ * events it emitted. Kept only so an address seen in an old transaction can be
+ * identified. See DEPLOYMENTS.md.
+ */
+export const supersededDeployments = {
+  [CHAIN_ID]: ["0x597d97EF05f0c6C8D554E7bA9bdb138b42ADD044"],
 } as const;
 
 export function deploymentFor(chainId: number): FutarchyDeployment | undefined {

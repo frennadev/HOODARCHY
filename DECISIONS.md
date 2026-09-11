@@ -796,3 +796,71 @@ noting that the proposal id had to be recomputed by hand afterwards, because the
 failed simulation was where that value was supposed to come from.
 
 **127 tests still pass**, plus 27 against the live chain tip.
+
+---
+
+## D24 — An ABI is an interface, and we broke one
+
+**What happened:** adding `descriptionUri` to the `Proposed` event changed that
+event's topic hash. The indexer, built from current ABIs, synced the chain
+happily, matched none of the deployed contract's proposal events, and then died
+on `Finalized` for a proposal it had never seen. The mainnet deployment from
+earlier the same day had become unreadable.
+
+**The lesson, stated plainly:** *changing an event breaks a deployment as surely
+as changing a function would.* Events feel like logging — passive, additive,
+safe to tweak. They are not. They are the read half of a contract's interface,
+and every consumer binds to their exact signature. Nothing warned us; the
+deployment kept working perfectly for anyone calling it directly.
+
+**Fixed by redeploying**, so the chain matches the source. Addresses in
+[DEPLOYMENTS.md](DEPLOYMENTS.md), with the superseded set kept so an address in
+an old transaction can still be identified.
+
+**What this costs going forward:** once real money is in a deployment, an event
+change means either leaving it unindexable or migrating. Worth knowing before
+the first production deployment rather than after.
+
+---
+
+## D25 — The backend is queryable
+
+**Decided:** ship the indexer (Ponder) and export ABIs and deployment addresses,
+so a frontend developer has a complete backend to build against and never has to
+reach into Foundry's build output or hand-assemble calldata.
+
+**What exists now:** proposals, markets, the recorded price series, trades and
+positions, as queryable tables with a GraphQL endpoint and two REST routes for
+the questions a proposal page asks constantly. It has been run against mainnet
+and indexed a real proposal end to end.
+
+**The one subtlety worth knowing.** Pools and oracles are created per proposal,
+so their addresses cannot be listed in a config — they are discovered through
+`MarketFactory.MarketCreated`. And a launch transaction emits in this order:
+
+```
+LiquidityAdded   (pools seeded)
+Started          (oracles anchored)
+Launched         (governor announces the markets)
+```
+
+So a pool's first liquidity event arrives *before* anything says which proposal
+that pool belongs to. Handlers upsert stub rows and `Launched` back-fills the
+link. Assuming the intuitive order silently drops the opening liquidity of every
+proposal and leaves the pool's reserves wrong permanently, since reserves are
+read from events rather than accumulated.
+
+**Why the observation table stores two prices.** It keeps the slow rate-limited
+`observation` *and* the raw `spot` side by side. Queried from the live
+deployment, that is:
+
+```
+obs= 2000000  spot= 2000000
+obs= 2560000  spot= 3378049
+obs= 3060000  spot= 3378049
+obs= 3378049  spot= 3378049
+```
+
+The gap between the columns is the lag doing its job. A trader can see that
+shoving the price does not move the decision — the security argument, made
+visible rather than asserted.
