@@ -90,6 +90,31 @@ export const uniswapV4 = {
 } as const;
 
 /**
+ * ✅ CONFIRMED LIVE — verified 2026-09-11.
+ *
+ * The treasury layer. Checked by calling `VERSION()` rather than trusting
+ * codesize, since a codesize check only proves *something* is deployed: both
+ * singletons answer "1.4.1", and 1.3.0 is present too.
+ *
+ * Use the **L2** singleton. Robinhood Chain is an Arbitrum Nitro rollup, and the
+ * L2 build of Safe emits the extra events indexers depend on.
+ *
+ * A project's treasury is a Safe whose only executor is our module (D10) — no
+ * human signer can move funds. This mirrors MetaDAO, whose treasury is a Squads
+ * 1-of-1 signed by the futarchy program itself; EVM contracts cannot sign the
+ * way Solana programs can, so a Safe module is the equivalent route.
+ */
+export const safe = {
+  SINGLETON_L2: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+  PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+  MULTISEND: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
+  MULTISEND_CALL_ONLY: "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D",
+  /** 1.3.0, also live, if an older Safe ever has to be adopted. */
+  SINGLETON_L2_1_3_0: "0x3E5c63644E683549055b9Be8653de26E0B4CD36E",
+  PROXY_FACTORY_1_3_0: "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2",
+} as const;
+
+/**
  * ⚠️ UNVERIFIED — placeholder.
  *
  * Chainlink is the chain's announced official oracle, but we have not yet

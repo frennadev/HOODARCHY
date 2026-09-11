@@ -5,7 +5,7 @@
 > do not fork it into a second document.
 >
 > Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (77 tests). Per-proposal conditional pools are our own CPMM, ported
+> and tested (98 tests). Per-proposal conditional pools are our own CPMM, ported
 > from MetaDAO per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
@@ -385,11 +385,29 @@ attacker" on a thin book for 20 minutes.
 - replace the Governor or ConditionalVault
 - touch L2 precompiles or the sequencer inbox
 
-### 5.5 Executor = Safe + Zodiac
+### 5.5 Executor = Safe + our own module — **BUILT (D21)**
 
-One Safe per DAO, owners empty or dummy. The only module that can `exec` is the
-Executor, and only when `proposal.state == Passed` **and** the actions hash
-matches. Mark executed to prevent replay. This is Squads, in EVM.
+One Safe per DAO, owner set to an address nobody holds. The only module that can
+`exec` is `FutarchyExecutor`, and only when the Governor reports the proposal
+approved **and** the actions hash matches. Executed is marked before any external
+call, so replay is refused. This is Squads, in EVM.
+
+Safe 1.4.1 is deployed on Robinhood Chain (verified by `VERSION()`, addresses in
+`RobinhoodChain.sol`). Our own minimal module rather than Zodiac — D2 says copy
+patterns, do not take dependencies.
+
+**Two structural rules, and deliberately no action allowlist beyond them:**
+
+1. A batch may not call the Safe. `enableModule` is an ordinary call to the
+   Safe's own address, so one passed proposal could attach a second module that
+   answers to nobody — futarchy exited permanently, by market vote, once.
+2. A batch may never `delegatecall`. Rule 1 is insufficient on its own:
+   delegatecall runs any contract's code in the Safe's storage and can rewrite
+   the module list without naming the Safe. Hard-coded, never a parameter.
+
+The kernel/growth table in §5.4 is **not built**, on purpose. MetaDAO has no
+equivalent and each extra rule is a way to block a legitimate proposal. Revisit
+if a concrete need appears; the two rules above are structural, not policy.
 
 ### 5.6 DAO templates — which metric
 

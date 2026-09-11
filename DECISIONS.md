@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (77 tests passing — 63 unit, 14 against the live chain):**
+**Built and tested (98 tests passing — 77 unit, 21 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -614,3 +614,65 @@ leave the price somewhere other than the average to have any power.
 **What this unblocks:** the Governor can now compare two markets and get the same
 answer no matter who calls it or when, which is the property `finalize()` needs
 to be safe.
+
+---
+
+## D21 — The Executor is a Safe module, copied from how MetaDAO holds its treasury
+
+**Decided:** Each project's treasury is a Safe. The only thing that can spend
+from it is our `FutarchyExecutor` module, which runs one batch of calls, once,
+after the market approved that exact batch. No allowlist of permitted actions
+beyond two structural rules — see below.
+
+**Why this shape:** it is what MetaDAO does, translated. Their treasury is a
+Squads multisig configured 1-of-1 whose sole signer is the futarchy program
+itself, and a proposal's payload is a Squads transaction the program merely
+*approves* — the governance program never runs arbitrary code. We keep that
+split exactly: the Governor decides and records a fingerprint, the Executor
+matches the fingerprint and spends, and neither knows much about the other.
+
+**The one thing that does not translate.** On Solana, programs can sign for
+addresses natively, so "the treasury's only signer is the market" is a literal
+setting. EVM contracts cannot sign that way. The equivalent is a Safe *module*:
+modules skip the owner-signature check entirely, which lets a contract move money
+no human can. Safe is deployed on Robinhood Chain — checked before building on
+it, and checked by asking `VERSION()` rather than trusting that bytecode exists.
+
+**Two rules, both closing doors that only exist on EVM.** This is the whole of
+the restriction, and each is there for a specific reason rather than as
+general-purpose caution:
+
+1. **A batch may not call the Safe.** `enableModule` is an ordinary call to the
+   Safe's own address. Without this rule, one passed proposal attaches a second
+   module — and that module answers to nobody. The treasury leaves futarchy
+   permanently, by market vote, once. There is no undo.
+2. **A batch may never `delegatecall`.** Rule 1 alone is not enough, which is the
+   part that is easy to miss. Delegatecalling *any* contract runs its code inside
+   the Safe's own storage, so it can rewrite the module list without the Safe ever
+   appearing as a target. The operation is hard-coded, never a parameter.
+
+I described this as one rule when we discussed it. It is two, and the second is
+the one that would have been quietly missing.
+
+**What we deliberately did not build.** The kernel/growth allowlist in §5.4 —
+forbidding Chainlink feed changes, Governor replacement, L2 precompiles. MetaDAO
+has no equivalent, and every extra rule is another way to block a legitimate
+proposal. The two rules above are not that list; they are the minimum that stops
+the treasury voting itself out of the system. The rest is recorded as a possible
+later addition rather than shipped now.
+
+**Tested against a real Safe, not only a mock.** Audit lesson §6.2(d) is that
+Capital DAO's H-1 fix passed against a mock and reverted against real Uniswap. A
+Safe module is the same bet, so there is a fork test that deploys a genuine Safe
+through the real proxy factory on mainnet and runs the module against it: money
+moves, replay is refused, and the escape attempt fails.
+
+One of those tests exists only to check the defence is real: it makes the same
+`enableModule` call *directly* and shows it succeeds. Without that, "the attack
+was blocked" could just mean the call was a no-op all along.
+
+**Cost:** a Safe whose owner is an address nobody holds is unrecoverable by
+design. If the Governor is ever broken and no proposal can pass, the money is
+stuck. That is the deal — D10 said it plainly, and it is the product.
+
+**98 tests pass.**

@@ -69,6 +69,20 @@ library RobinhoodChain {
     address internal constant UNIV2_ROUTER = 0x89e5DB8B5aA49aA85AC63f691524311AEB649eba;
 
     // -------------------------------------------------------------------------
+    // Safe — the treasury. Confirmed live 2026-09-11.
+    // -------------------------------------------------------------------------
+
+    /// @dev Verified by `VERSION()`, not codesize alone: both singletons answer
+    ///      "1.4.1". Use the **L2** singleton — this chain is an Arbitrum Nitro
+    ///      rollup, and the L2 build emits the extra events indexers rely on.
+    address internal constant SAFE_SINGLETON_L2 = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
+    address internal constant SAFE_PROXY_FACTORY = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
+
+    /// @dev 1.3.0 is also deployed here, if an older Safe ever has to be adopted.
+    address internal constant SAFE_SINGLETON_L2_1_3_0 = 0x3E5c63644E683549055b9Be8653de26E0B4CD36E;
+    address internal constant SAFE_PROXY_FACTORY_1_3_0 = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
+
+    // -------------------------------------------------------------------------
     // Unverified — resolve before use
     // -------------------------------------------------------------------------
 
