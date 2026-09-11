@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (47 tests passing — 37 unit, 10 against the live chain):**
+**Built and tested (51 tests passing — 37 unit, 14 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -426,3 +426,62 @@ why it matters is still the best statement of the stakes.
 to be re-derived for V4's accounting, since there is no per-pool address to
 donate to — this may be simpler on V4, but "may be" is not "is"), and the hook
 itself.
+
+---
+
+## D18 — On V4, a proposal's pool can be **stolen before it exists** — and the
+seeder must take it back rather than give up
+
+I set out to design shared liquidity. The first question turned out to be whether
+we can safely *create* the two markets at all, and the answer was no — not
+without this.
+
+**The hazard, confirmed against the live chain.** A V4 pool is identified by the
+addresses of its two tokens. Our conditional token addresses are deliberately
+predictable (D13), so anyone can work out a future proposal's pool in advance.
+Creating a pool in V4:
+
+- is open to anyone,
+- costs only gas,
+- needs **no tokens at all** — I confirmed a pool can be created for two addresses
+  that hold no code whatsoever, so the attack lands before the tokens are even
+  deployed,
+- and **cannot be done twice**.
+
+So an attacker sits on a proposal's pool, sets the price to something absurd, and
+when our seeder tries to create it properly the call fails. Every proposal on the
+platform, blocked permanently, for pennies each.
+
+**This is the Capital DAO bug again.** Audit finding H-1 was three cents of USDG
+sent to a predictable pool address, which stopped a raise from ever launching and
+could not be undone. D7 was written in response, and it says the answer is always
+the same: **absorb the interference, never reject it.** Different chain, different
+DEX, same shape. It is worth noting the rule caught this before the code existed.
+
+**The defence, and why it costs nothing.** An empty pool has nothing to trade
+against. So the seeder can push the price back wherever it wants and no tokens
+move — the pool has none. Concretely: if the pool already exists, don't try to
+create it; take the price back and continue as normal.
+
+I did not take that on trust. There are now four tests running against the **real
+V4 contract on mainnet** which show the attack succeeding, our creation call
+failing exactly as feared, and the seeder reclaiming the price — from too high,
+and from too low. Cost of the recovery: roughly 111,000 gas, a fraction of a cent
+here.
+
+**What this changes:** seeding a conditional pool is never "create it", it is
+"make sure it reads the price we intend, whoever got there first". The V2 rule
+was absorb a *donation*; the V4 rule is absorb a *pre-creation*. Same principle,
+adapted rather than copied — which is what D7 anticipated when it said predictable
+addresses mean the defence is mandatory rather than optional.
+
+**Still open, and still the hard part.** This makes the pools safe to create. It
+does not yet put liquidity in them. The shared-liquidity design — borrowing from
+the project's main pool so both markets have depth — is the remaining piece, and
+D5 is still the best statement of why it matters.
+
+One thing already settled by it: the borrowed liquidity should sit across the
+**full price range** rather than concentrated. V4 lets liquidity be placed in a
+narrow band, which is more efficient, but a band the price moves outside of stops
+quoting entirely — and our recorder reads these pools to decide the proposal. A
+market that can silently stop having a price is not one a decision should rest on.

@@ -5,7 +5,8 @@
 > do not fork it into a second document.
 >
 > Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (47 tests). Conditional pools target Uniswap V4 (D17).
+> and tested (51 tests). Conditional pools target Uniswap V4 (D17), and V4
+> pre-creation grief is defended and proven on mainnet (D18).
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
 
@@ -593,7 +594,7 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
 | Goodhart on token price | Inherent to the metric choice. Same as MetaDAO. Disclose. |
 | Sequencer trust | Mitigated by time-caps, **not eliminated**. Disclose plainly. |
 | US persons / securities | A launchpad governing a Stock-Token derivative is a lawyer problem. Keep Stock Tokens as **metric**, not as the fundraising asset, unless counsel says otherwise. |
-| Preseed grief on conditional pools | **Must be designed out before any proposal ships** (§6.2a). |
+| Preseed grief on conditional pools | **Designed out for V4 (D18)** — pre-creation absorbed by reclaiming the price of an empty pool; proven against the live PoolManager. Re-derive if the parent pool moves to another version. |
 | Chainlink feeds unconfirmed | Blocks template B entirely. |
 
 ---
@@ -618,8 +619,15 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
    remove the receive-hook reentrancy surface (§6.3.1) and drop straight into
    existing AMM/router tooling. *Leaning ERC-20 clones for the pools, ERC-1155
    only if composability demands it.*
-2. **Preseed defence for conditional pools** — absorb-the-shortfall (proven in
-   Capital DAO), or permissioned pool creation, or non-deterministic addresses?
+2. ~~**Preseed defence for conditional pools**~~ — **ANSWERED (D18).** On V4 the
+   attack is not a donation but a *pre-creation*: pool creation is
+   permissionless, needs no tokens, works before the conditional tokens exist,
+   and cannot be repeated — so an attacker can pin a proposal's pool at a
+   nonsense price for gas and block it permanently. Defence is the same
+   principle as Capital DAO's: absorb, never reject. An empty pool has nothing
+   to trade against, so the seeder reclaims the price for ~111k gas and no token
+   movement. Verified against the live PoolManager in
+   `test/fork/V4SeedingDefence.t.sol`.
 3. **`maxChangePerSecond` exact value**, and the timestamp-gap freeze threshold N.
 4. **Uniswap V2 or V3 for the parent spot pool?** V2 is confirmed in production
    here and is simpler to split into complete sets; V3 gives concentrated
