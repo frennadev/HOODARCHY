@@ -88,19 +88,33 @@ worth stating publicly because anyone building here will hit them.
 ### 1. Uniswap v4 is not where you'd expect
 
 Ecosystem materials describe Robinhood Chain as shipping "Uniswap v2, v3, v4 and
-UniswapX from day one." We probed both canonical v4 `PoolManager` addresses used
-across other chains:
+UniswapX from day one." All of that is true — but v4 is **not** at the canonical
+`PoolManager` address it uses on other chains:
 
 ```
 0x000000000004444c5dc75cB358380D2e3dE08A90   -> no code
 0x1F98400000000000000000000000000000000004   -> no code
+
+0x8366a39CC670B4001A1121B8F6A443A643e40951   -> PoolManager      (24,009 bytes)
+0x58daec3116aae6D93017bAAea7749052E8a04fA7   -> PositionManager  (23,877 bytes)
 ```
 
-Either v4 is deployed at a non-canonical address we haven't located, or it isn't
-deployed. **Capital DAO builds against Uniswap v3**, which is verified and
-complete, and keeps the AMM integration behind an interface so v4 hooks can be
-adopted later if and when a PoolManager is confirmed. Our test suite asserts v4's
-absence, so the day it lands, a test fails and we revisit.
+We got this wrong once, and the mistake is instructive: we probed the canonical
+addresses plus twelve more from other chains, found nothing, and recorded v4 as
+absent. **A v4 deployment has a different address on every chain**, so absence at
+addresses you already know is not evidence of anything. v4 is in fact the deepest
+venue here — its singleton holds roughly 45M USDG, an order of magnitude more
+stablecoin than all three v3 USDG/WETH fee tiers combined.
+
+What we should have done, and now do: verify by asking contracts what they are
+wired to. `PositionManager.poolManager()` returning the PoolManager — and both
+naming the same Permit2 and WETH we verified independently — is evidence a
+codesize probe cannot give you. The clue was in our own address list the whole
+time: the UniversalRouter we verified in July is v4-capable, and its
+`poolManager()` points straight at the deployment we said did not exist.
+
+The AMM integration sits behind an `IPriceSource` interface, so which version the
+markets use is a decision on merit rather than a constraint.
 
 ### 2. The public RPC is not an archive node
 

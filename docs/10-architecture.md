@@ -85,16 +85,22 @@ mean deploying two token contracts per proposal. At high proposal volume, ERC-11
 would be cheaper. Given gas is ~0.05 gwei here, simplicity wins for now, but this
 should be re-examined if volume grows.
 
-### Uniswap v3, with v4 behind an interface
+### The AMM sits behind an interface, so the version is not load-bearing
 
-v4 is not deployed at its canonical addresses on this chain (see
-[Why Robinhood Chain](09-why-robinhood-chain.md)), so the AMM layer targets
-**Uniswap v3**, which is fully verified.
+Uniswap **v2, v3 and v4 are all deployed** on Robinhood Chain. v4 lives at a
+chain-specific address rather than the canonical one it uses elsewhere, which is
+why an earlier draft of these docs wrongly recorded it as absent.
 
-v4 hooks would be a genuinely better fit — conditional-pool logic could live in
-a hook rather than in wrapper contracts. So `MarketFactory` and the oracle sit
-behind interfaces that a v4 implementation can satisfy later without touching
-the governor.
+The oracle does not read a pool directly. It reads an `IPriceSource`, and a
+per-version adapter implements that. This keeps the part that carries the
+security — the rate limiting and time weighting — independent of which AMM is
+underneath, so the pool choice can be made on merit and revisited without
+re-auditing the core.
+
+v4 hooks are a genuinely better fit for the long run: conditional-pool logic
+could live in a hook that updates the oracle on every trade, rather than in
+wrapper contracts waiting to be poked. Which version the pass/fail pools
+actually use is still open — see D15 in the decision log.
 
 ### The TWAP oracle is the most security-critical component
 

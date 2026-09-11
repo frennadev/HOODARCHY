@@ -4,7 +4,8 @@
 > outlive any individual work session. If something here goes stale, edit it —
 > do not fork it into a second document.
 >
-> Status: conditional vault and lagged-price oracle built and tested (28 tests).
+> Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
+> and tested (47 tests). Conditional pools target Uniswap V4 (D17).
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
 

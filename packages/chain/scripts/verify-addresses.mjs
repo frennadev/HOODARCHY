@@ -26,13 +26,39 @@ const MUST_HAVE_CODE = {
   "UNIV3_UNIVERSAL_ROUTER": "0x8876789976decbfcbbbe364623c63652db8c0904",
   "UNIV3_POSITION_MANAGER": "0x73991a25c818bf1f1128deaab1492d45638de0d3",
   "UNIV3_QUOTER_V2": "0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7",
+  "UNIV4_POOL_MANAGER": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  "UNIV4_POSITION_MANAGER": "0x58daec3116aae6D93017bAAea7749052E8a04fA7",
 };
 
-/** Known-empty. If one of these sprouts code, v4 landed — update addresses.ts. */
-const EXPECTED_EMPTY = {
-  "UNIV4_POOL_MANAGER (canonical A)": "0x000000000004444c5dc75cB358380D2e3dE08A90",
-  "UNIV4_POOL_MANAGER (canonical B)": "0x1F98400000000000000000000000000000000004",
-};
+/**
+ * Cross-checks: `to` must report `expect` when asked `sig`.
+ *
+ * This section exists because of a real mistake. We used to keep a list of
+ * canonical v4 addresses, assert they were empty, and treat that as proof v4
+ * was not deployed here. The addresses were empty and the conclusion was false —
+ * v4 deploys to a different address on every chain, so absence at addresses we
+ * happen to know proves nothing. Worse, the check could only ever confirm what
+ * we already believed.
+ *
+ * Asking a contract what it is wired to can actually falsify a wrong address, so
+ * that is what we do now. The v4 PositionManager naming its PoolManager, and
+ * both naming the Permit2 and WETH we verified independently, is evidence a
+ * codesize check cannot give us.
+ */
+const WIRING = [
+  {
+    name: "UNIV4_POSITION_MANAGER.poolManager()",
+    to: "0x58daec3116aae6D93017bAAea7749052E8a04fA7",
+    sig: "0xdc4c90d3", // poolManager()
+    expect: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  },
+  {
+    name: "UNIV3_UNIVERSAL_ROUTER.poolManager()",
+    to: "0x8876789976decbfcbbbe364623c63652db8c0904",
+    sig: "0xdc4c90d3", // poolManager() — the router is v4-capable
+    expect: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  },
+];
 
 let id = 0;
 async function rpc(method, params = []) {
@@ -71,13 +97,13 @@ async function main() {
   }
 
   console.log("");
-  for (const [name, addr] of Object.entries(EXPECTED_EMPTY)) {
-    const size = await codeSize(addr);
-    if (size > 0) {
-      console.log(`NEW!  ${name.padEnd(32)} ${addr} now has ${size} bytes — update addresses.ts`);
-    } else {
-      console.log(`ok    ${name.padEnd(32)} still empty (as expected)`);
-    }
+  for (const { name, to, sig, expect } of WIRING) {
+    const raw = await rpc("eth_call", [{ to, data: sig }, "latest"]);
+    const got = `0x${raw.slice(-40)}`;
+    const ok = got.toLowerCase() === expect.toLowerCase();
+    if (!ok) failures++;
+    console.log(`${ok ? "ok  " : "FAIL"}  ${name.padEnd(38)} -> ${got}`);
+    if (!ok) console.log(`      expected ${expect}`);
   }
 
   // Decimals are a correctness landmine; assert them explicitly.

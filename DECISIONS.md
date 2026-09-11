@@ -106,7 +106,13 @@ between pokes can't be exploited — see D8.
 
 ---
 
-## D5 — Conditional pools use **Uniswap V2**, not V3
+## D5 — ~~Conditional pools use **Uniswap V2**, not V3~~ **Superseded by D17**
+
+> **Superseded, not withdrawn.** This decision was sound given what we believed
+> at the time — the choice really was V2 or V3, because we thought V4 was not
+> here. D3 was wrong about that, which put a third option on the table. The
+> reasoning below still holds and is the reason the shared-liquidity question in
+> D17 is the hard part.
 
 **Decided:** V2 pairs for the pass/fail markets.
 
@@ -285,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (28 tests passing):**
+**Built and tested (47 tests passing — 37 unit, 10 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -341,7 +347,8 @@ V4 "hooks" let a pool update the recorder automatically on every trade instead o
 waiting to be poked. Against it: V4 is newer and more complex than V2, and the
 shared-liquidity trick in D5 — splitting a normal pool's two token piles into the
 two conditional markets — is straightforward in V2 and needs rethinking in V4.
-All 28 tests pass either way, so this can be decided on merit rather than urgency.
+All tests pass either way, so this could be decided on merit rather than urgency.
+**Resolved in D17: V4.**
 
 ---
 
@@ -357,3 +364,65 @@ exists, but Capital DAO no longer uses it.
 **What did not change:** The security lessons we inherited from the Capital DAO
 audit (D7 especially — absorb a donation rather than reject it) are about
 *predictable addresses*, which V4 has too. They still apply in full.
+
+---
+
+## D17 — The pass/fail markets will run on **Uniswap V4**
+
+**Decided:** V4 for the per-proposal conditional pools. This replaces D5.
+
+**Why:** You chose it, and the reasons hold up. V4 is where the chain's money
+actually is — its pools hold about **$45M**, against roughly $5.6M across all
+three V3 USDG/WETH pools. Building the markets somewhere the liquidity isn't
+would be starting at a disadvantage for no reason.
+
+The bigger prize is **hooks**. A hook is code a pool runs automatically on every
+trade, which means the pool can update our slow price itself. Today something has
+to "poke" the recorder, and D8 exists entirely to make sure a gap between pokes
+can't be exploited. With a hook, trading and recording happen together and that
+whole class of problem largely goes away.
+
+**What's built and tested now:** a V4 price source, reading the pool through the
+same swappable interface D15 introduced. The recorder itself was not touched —
+that was the entire point of D15, and it paid off immediately. **47 tests pass**,
+including two that read a real live V4 pool on mainnet and correctly price ETH at
+about $2,498 across the 18-decimal / 6-decimal boundary.
+
+### Two things we found by checking, that would have been expensive to assume
+
+**1. An "initialised" V4 pool is not necessarily a real one.** This chain carries
+a V4 pool that was created, never funded, and left parked at the maximum price
+the format can represent. Its stored price reads back as a perfectly well-formed
+number and is complete fiction. A price source that only read the price field
+would have handed the recorder that fiction with total confidence. Ours checks
+the pool actually holds liquidity first, and a test reads that exact live pool to
+prove it stays refused.
+
+**2. V4 lets you see a price nobody could have traded against.** V4 allows one
+transaction to open the pool, move it anywhere, act on it, and put it back before
+finishing. The recorder's rate limit already bounds the damage, but the security
+argument in D4 is stronger than "bounded" — it's that moving the recorded price
+means *holding* a false price in the open where other traders can profit by
+fading you. A price that exists only inside someone's own transaction was never
+exposed to that. So the source refuses to answer at all while the pool is
+mid-transaction. Cheap to do, and it keeps D4's argument true rather than merely
+survivable.
+
+**Cost, stated plainly:** V4 is newer and more complex than V2, and reading it
+means depending on the internal storage layout of Uniswap's contract rather than
+a published getter. We pinned that layout with a test that reads the live chain,
+so if Uniswap ever changes it we fail loudly instead of silently pricing things
+wrong. That is the right failure direction, but it is a real dependency and worth
+knowing about.
+
+**Still open, and genuinely the hard part:** the shared-liquidity trick from D5.
+Borrowing a project's main pool and splitting it into the two conditional markets
+is easy in V2, where a pool is just two piles of tokens you halve. V4 keeps
+everything in one shared vault, so the split has to be done differently. Nothing
+is blocked — but this is the piece that needs designing, and D5's reasoning about
+why it matters is still the best statement of the stakes.
+
+**Not started:** creating and seeding V4 pools (D7's absorb-the-donation rule has
+to be re-derived for V4's accounting, since there is no per-pool address to
+donate to — this may be simpler on V4, but "may be" is not "is"), and the hook
+itself.

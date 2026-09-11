@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {BaseTest} from "../BaseTest.sol";
 import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
+import {UniswapV4PriceSource} from "@capdao/oracle/sources/UniswapV4PriceSource.sol";
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -12,7 +13,8 @@ import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV
 /// This asserts nothing about Capital DAO's own logic — it exists to prove the
 /// toolchain, RPC, remappings, and address constants are all wired correctly,
 /// and to fail loudly the day one of our assumptions about the chain stops
-/// being true (a token gets redeployed, a decimals value changes, v4 lands).
+/// being true (a token gets redeployed, a decimals value changes, a DEX we
+/// depend on moves).
 ///
 /// Run:
 ///   forge test --match-path 'test/fork/*' -vv
@@ -68,14 +70,16 @@ contract RobinhoodChainForkTest is BaseTest {
 
     /// @dev Every address we depend on must actually hold bytecode.
     function test_coreAddressesHaveCode() public view {
-        address[7] memory required = [
+        address[9] memory required = [
             RobinhoodChain.WETH,
             RobinhoodChain.USDG,
             RobinhoodChain.PERMIT2,
             RobinhoodChain.MULTICALL3,
             RobinhoodChain.UNIV3_FACTORY,
             RobinhoodChain.UNIV3_SWAP_ROUTER_02,
-            RobinhoodChain.UNIV3_POSITION_MANAGER
+            RobinhoodChain.UNIV3_POSITION_MANAGER,
+            RobinhoodChain.UNIV4_POOL_MANAGER,
+            RobinhoodChain.UNIV4_POSITION_MANAGER
         ];
 
         for (uint256 i = 0; i < required.length; i++) {
@@ -83,14 +87,115 @@ contract RobinhoodChainForkTest is BaseTest {
         }
     }
 
-    /// @dev We deliberately record that v4 is absent. When this test starts
-    ///      failing, Uniswap v4 has been deployed and the conditional-pool
-    ///      design can move to hooks. That is a feature, not a broken test.
-    function test_uniswapV4StillNotDeployedAtCanonicalAddresses() public view {
+    /// @dev This test replaces one that asserted v4 was *absent* by checking the
+    ///      canonical PoolManager address. That address is still empty, so the
+    ///      old test passed happily while its conclusion was false: v4 deploys to
+    ///      a different address on every chain, so absence at an address we
+    ///      happen to know proves nothing. A test that can only confirm what we
+    ///      already believe is worse than no test.
+    ///
+    ///      Codesize alone is also not enough — any contract has code. What makes
+    ///      this a real v4 deployment is that the two halves point at each other.
+    function test_uniswapV4IsLiveAndInternallyConsistent() public view {
         assertEq(
-            address(0x000000000004444c5dc75cB358380D2e3dE08A90).code.length,
-            0,
-            "Uniswap v4 PoolManager may now exist - update addresses.ts and revisit the AMM design"
+            IUniV4PositionManager(RobinhoodChain.UNIV4_POSITION_MANAGER).poolManager(),
+            RobinhoodChain.UNIV4_POOL_MANAGER,
+            "PositionManager does not point at our PoolManager - addresses are not a matched pair"
+        );
+
+        // Ties the v4 deployment to constants we verified independently.
+        assertEq(
+            IUniV4PositionManager(RobinhoodChain.UNIV4_POSITION_MANAGER).permit2(),
+            RobinhoodChain.PERMIT2,
+            "v4 PositionManager wired to an unexpected Permit2"
+        );
+        assertEq(
+            IUniV4PositionManager(RobinhoodChain.UNIV4_POSITION_MANAGER).WETH9(),
+            RobinhoodChain.WETH,
+            "v4 PositionManager wired to an unexpected WETH"
         );
     }
+
+    /// @dev The UniversalRouter we verified in July is v4-capable and points at
+    ///      the same PoolManager. The evidence that v4 existed was in our own
+    ///      address list the whole time; nobody asked the router what it was
+    ///      wired to. Kept as a test so the link is never dropped again.
+    function test_universalRouterIsWiredToV4() public view {
+        assertEq(
+            IUniV4PositionManager(RobinhoodChain.UNIV3_UNIVERSAL_ROUTER).poolManager(),
+            RobinhoodChain.UNIV4_POOL_MANAGER,
+            "UniversalRouter no longer routes to the v4 PoolManager"
+        );
+    }
+
+    /// @dev All v4 pools share one singleton, so its balances are the entire v4
+    ///      TVL on this chain. Asserted loosely — the point is "this is a real,
+    ///      used venue", not an exact figure that would rot within a day.
+    function test_uniswapV4HoldsRealLiquidity() public view {
+        uint256 usdg =
+            IERC20Metadata(RobinhoodChain.USDG).balanceOf(RobinhoodChain.UNIV4_POOL_MANAGER);
+        assertGt(usdg, 1_000_000e6, "v4 singleton holds less USDG than expected for a live venue");
+    }
+
+    /// @dev The one that actually matters. `UniswapV4PriceSource` derives a
+    ///      pool's storage slot from an assumed `PoolManager` layout and reads it
+    ///      raw. Unit tests prove the arithmetic against a mock that encodes the
+    ///      same assumption, so only this test can catch the assumption itself
+    ///      being wrong. If the deployed PoolManager ever changes layout, this
+    ///      fails and the mock keeps passing — which is the point.
+    function test_v4PriceSourceReadsTheRealEthUsdgPool() public {
+        UniswapV4PriceSource src = new UniswapV4PriceSource(
+            RobinhoodChain.UNIV4_POOL_MANAGER,
+            address(0), // native ETH sorts first
+            RobinhoodChain.USDG,
+            500,
+            10,
+            address(0), // no hooks
+            address(0) // price ETH, in USDG
+        );
+
+        // Derivation must land on the pool we located by scanning the chain.
+        assertEq(
+            src.POOL_ID(),
+            0x387bf619da4d3fb62bb276482693dba1b9b3520f573cabdfe033384a24125982,
+            "pool id derivation drifted from the live pool"
+        );
+
+        // USDG is 6dp, so this reads directly as dollars per ETH. Banded wide:
+        // the assertion is "the decimal scaling is right", not a market call.
+        uint256 price = src.spotPrice();
+        assertGt(price, 500e6, "ETH price implausibly low - decimal scaling suspect");
+        assertLt(price, 20_000e6, "ETH price implausibly high - decimal scaling suspect");
+    }
+
+    /// @dev A real, initialised, permanently empty pool on this chain, parked at
+    ///      the maximum representable price. It is the live proof that reading
+    ///      slot0 without checking liquidity would feed the oracle a fiction.
+    function test_v4PriceSourceRefusesTheEmptyWethUsdgPool() public {
+        UniswapV4PriceSource src = new UniswapV4PriceSource(
+            RobinhoodChain.UNIV4_POOL_MANAGER,
+            RobinhoodChain.WETH,
+            RobinhoodChain.USDG,
+            100,
+            1,
+            address(0),
+            RobinhoodChain.WETH
+        );
+
+        assertEq(
+            src.POOL_ID(),
+            0x35d5055f7162c8e8e1742f0559f53376287e998c0e4845ffefd275d85cc1701a,
+            "pool id derivation drifted"
+        );
+        assertEq(src.spotPrice(), 0, "reported a price for a pool with no liquidity");
+    }
+}
+
+/// @dev Minimal shape of the v4 PositionManager / UniversalRouter accessors we
+///      use to prove the deployment is coherent. Declared locally because the
+///      v4-periphery submodule is not vendored.
+interface IUniV4PositionManager {
+    function poolManager() external view returns (address);
+    function permit2() external view returns (address);
+    function WETH9() external view returns (address);
 }
