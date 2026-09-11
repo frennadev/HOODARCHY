@@ -12,7 +12,8 @@
 | --- | --- |
 | ✅ | Robinhood Chain verified directly: chain IDs, ArbOS 61, EVM target, gas costs |
 | ✅ | Ecosystem addresses verified on-chain — WETH, USDG, Uniswap v3, Permit2, Multicall |
-| ✅ | Key blockers identified: public RPC not archive, Chainlink feeds unconfirmed, Gnosis CTF is Solidity 0.5 |
+| ✅ | Key blockers identified: Chainlink feeds unconfirmed, Gnosis CTF is Solidity 0.5 |
+| ✅ | Archive RPC resolved — fork tests pin to a fixed block instead of drifting with the chain tip |
 | ✅ | Corrected an earlier error that recorded Uniswap v4 as absent — it is deployed here, at a chain-specific address |
 | ✅ | Development environment built and verified end to end |
 | ✅ | Public documentation drafted (this set) |

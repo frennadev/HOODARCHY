@@ -120,15 +120,20 @@ markets use is a decision on merit rather than a constraint.
 
 Fork testing against a pinned historical block — the normal way to write
 deterministic integration tests — **does not work on the public endpoint.**
-State older than roughly 20k–100k blocks returns `metadata is not found`.
+Re-measured 2026-09-10, and it is worse than first recorded: state just **1,000
+blocks** back already returns `metadata is not found`, not 20k–100k. The endpoint
+also rate limits under a plain test run.
 
-Practical consequence: fork tests must either run against the latest block
-(non-deterministic) or use a dedicated archive provider such as Alchemy. Our
-test harness defaults to latest and accepts a `FORK_BLOCK` override for when an
-archive endpoint is configured.
+**Resolved for us.** An Alchemy archive endpoint serves state at every depth we
+tried, down to block 1. Fork tests now pin by default, so a failure means our
+code changed rather than the chain moving underneath it. Running them against
+the live tip is kept as a separate drift check (`pnpm test:fork:drift`), because
+pinning freezes our assumptions about the chain and something has to notice the
+day one of them stops being true.
 
-The public RPC is also rate limited, and not suitable for production frontends
-or indexers.
+Anyone reproducing this work needs their own archive provider. The public RPC
+remains fine for casual reads and unusable for deterministic tests, production
+frontends, or indexers.
 
 ### 3. Chainlink feed addresses are still unconfirmed
 

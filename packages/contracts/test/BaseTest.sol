@@ -39,6 +39,30 @@ abstract contract BaseTest is Test {
         return whole * 1e18;
     }
 
+    // --- forking --------------------------------------------------------------
+
+    /// @dev The block mainnet forks pin to by default.
+    ///
+    ///      Pinning needs an archive RPC. The public endpoint is not one — it
+    ///      loses state within about a thousand blocks and rate limits besides —
+    ///      so these tests used to run against `latest` and quietly depend on
+    ///      state that moves underneath them. With Alchemy configured in
+    ///      `RH_MAINNET_RPC_URL` (archive back to genesis, verified) they can
+    ///      pin, so a fork test failing now means the code changed rather than
+    ///      the chain.
+    uint256 internal constant FORK_BLOCK_DEFAULT = 59_563_000;
+
+    /// @notice Selects a mainnet fork, pinned unless told otherwise.
+    /// @dev `FORK_BLOCK=0` forks at the chain tip instead. That is the drift
+    ///      check: pinning makes failures reproducible but also freezes our
+    ///      assumptions, so something has to run against the live chain to
+    ///      notice the day one of them stops being true. `pnpm test:fork:drift`.
+    function _forkMainnet() internal returns (uint256 forkId) {
+        string memory rpc = vm.envString("RH_MAINNET_RPC_URL");
+        uint256 pinned = vm.envOr("FORK_BLOCK", FORK_BLOCK_DEFAULT);
+        forkId = pinned == 0 ? vm.createSelectFork(rpc) : vm.createSelectFork(rpc, pinned);
+    }
+
     // --- assertions -----------------------------------------------------------
 
     /// @dev Assert `a` and `b` are within `tolerance` basis points of each other.

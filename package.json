@@ -11,6 +11,7 @@
     "build": "forge build --root packages/contracts",
     "test": "forge test --root packages/contracts",
     "test:fork": "forge test --root packages/contracts --match-path 'test/fork/*' -vv",
+    "test:fork:drift": "FORK_BLOCK=0 forge test --root packages/contracts --match-path 'test/fork/*' -vv",
     "fmt": "forge fmt --root packages/contracts",
     "fmt:check": "forge fmt --root packages/contracts --check",
     "lint": "slither packages/contracts || true",

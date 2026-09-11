@@ -24,19 +24,11 @@ import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV
 contract RobinhoodChainForkTest is BaseTest {
     uint256 internal fork;
 
-    /// @dev The public RPC is NOT an archive node. Measured 2026-07-26: state at
-    ///      ~20k blocks back still resolves, state at ~100k back returns
-    ///      `metadata is not found`. So we cannot pin a fixed historical block
-    ///      here the way you normally would — it silently rots within days.
-    ///
-    ///      Default: fork at latest. Set FORK_BLOCK to pin, which is what you
-    ///      should do once an archive provider (Alchemy) is configured, because
-    ///      unpinned forks make tests depend on state that moves under you.
+    /// @dev Pinned by default now that an archive RPC is configured; see
+    ///      `BaseTest._forkMainnet`. Run `pnpm test:fork:drift` to check the same
+    ///      assumptions against the live chain.
     function setUp() public {
-        string memory rpc = vm.envString("RH_MAINNET_RPC_URL");
-        uint256 pinned = vm.envOr("FORK_BLOCK", uint256(0));
-
-        fork = pinned == 0 ? vm.createSelectFork(rpc) : vm.createSelectFork(rpc, pinned);
+        fork = _forkMainnet();
     }
 
     function test_forkIsRobinhoodChain() public view {

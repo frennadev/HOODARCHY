@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Test} from "forge-std/Test.sol";
-
+import {BaseTest} from "../BaseTest.sol";
 import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
 
 /// @dev The slice of the V4 singleton this scenario needs.
@@ -80,7 +79,7 @@ contract SeedingHarness {
 ///
 ///         D7 says the answer is always to absorb the interference, never to
 ///         reject it. This works out what absorbing looks like on V4.
-contract V4SeedingDefenceTest is Test {
+contract V4SeedingDefenceTest is BaseTest {
     IV4PoolManager internal pm;
     SeedingHarness internal harness;
 
@@ -93,7 +92,7 @@ contract V4SeedingDefenceTest is Test {
     address internal constant P_USDG = address(0x2222222222222222222222222222222222222222);
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("RH_MAINNET_RPC_URL"));
+        _forkMainnet();
         pm = IV4PoolManager(RobinhoodChain.UNIV4_POOL_MANAGER);
         harness = new SeedingHarness(address(pm));
     }
