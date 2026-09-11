@@ -1,0 +1,79 @@
+name: Chain drift
+
+# The checks that only a live chain can answer.
+#
+# These do not belong in CI-on-every-push. They fail when *the world* changes,
+# not when the code does — a redeployed token, a moved DEX, a deployment that
+# no longer matches our ABIs. Tying that to a pull request would mean a
+# contributor's unrelated change goes red because Robinhood shipped something.
+#
+# Running daily instead means we find out within a day, on a run that is
+# obviously about the chain rather than about somebody's branch.
+on:
+  schedule:
+    # 07:00 UTC daily.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  drift:
+    name: assumptions still hold
+    runs-on: ubuntu-latest
+    # Needs an archive endpoint: the public RPC loses state within ~1,000
+    # blocks and rate limits under a plain test run.
+    env:
+      RH_MAINNET_RPC_URL: ${{ secrets.RH_MAINNET_RPC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Secret present?
+        id: secret
+        run: |
+          if [ -z "$RH_MAINNET_RPC_URL" ]; then
+            echo "No RH_MAINNET_RPC_URL secret; nothing here can run."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Ecosystem addresses still hold code, decimals unchanged, and the
+      # Uniswap V4 wiring still points where we think it does.
+      - name: Verify ecosystem addresses
+        if: steps.secret.outputs.present == 'true'
+        run: node packages/chain/scripts/verify-addresses.mjs
+
+      # Pinned, so a failure means our code changed rather than the chain moved.
+      - name: Fork tests (pinned block)
+        if: steps.secret.outputs.present == 'true'
+        run: forge test --root packages/contracts --match-path 'test/fork/*'
+
+      # The same tests against the live tip. This is the one that actually
+      # notices drift: pinning freezes our assumptions along with everything
+      # else, so something has to look at the chain as it is today.
+      - name: Fork tests (live tip)
+        if: steps.secret.outputs.present == 'true'
+        env:
+          FORK_BLOCK: 0
+        run: forge test --root packages/contracts --match-path 'test/fork/*'
+
+      # D24: an event signature change makes a deployment unreadable to every
+      # consumer, while the deployment keeps working for anyone calling it
+      # directly. Nothing surfaces that except asking the chain.
+      - name: Deployed contracts still speak our ABI
+        if: steps.secret.outputs.present == 'true'
+        run: |
+          forge build --root packages/contracts
+          node scripts/check-deployment-abi.mjs

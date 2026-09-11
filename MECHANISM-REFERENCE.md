@@ -680,5 +680,8 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
 | Contracts | `packages/contracts` (Foundry; forge-std, OZ, OZ-upgradeable, v3-core, v3-periphery, chainlink submodules) |
 | Chain constants | `packages/contracts/src/config/RobinhoodChain.sol` ↔ `packages/chain/src/addresses.ts` — **keep both in sync**, `pnpm chain:check` re-verifies against live RPC |
 | Product docs | `docs/` (16 files, pre-launch drafts, not legally reviewed) |
-| Indexer / web | `packages/indexer`, `packages/web` |
+| Indexer | `packages/indexer` — Ponder. Proposals, markets, price series, trades, positions. Run against mainnet (D25). |
+| Web | `packages/web` — **empty**. Owned by the web developer; this repo provides the backend, ABIs and addresses. |
+| ABIs + deployments | `packages/chain/src/abis`, `packages/chain/src/deployments.ts` — committed so consumers never reach into Foundry's `out/`. `pnpm abis:check` fails on drift. |
+| CI | `.github/workflows/ci.yml` runs without secrets on every push. `chain-drift.yml` runs daily and holds the checks only a live chain can answer — including whether the deployed contracts still speak our ABI (D24). |
 | Capital DAO (reference only) | `~/Documents/capital dao` — **never a dependency** |

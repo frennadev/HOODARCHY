@@ -1,0 +1,87 @@
+name: CI
+
+# Everything here runs without secrets, so it works on forks and on a clone
+# with nothing configured. The checks that need an archive RPC live in
+# chain-drift.yml, because a contributor who cannot run them should not see a
+# red X they have no way to fix.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Formatting
+        run: forge fmt --root packages/contracts --check
+
+      - name: Build
+        run: forge build --root packages/contracts --sizes
+
+      # Unit and invariant tests only. The fork tests need an archive endpoint.
+      # `ci` profile runs 5,000 fuzz runs rather than the local 512 — the extra
+      # time is free here and the whole point of the fuzzers is finding the case
+      # a human would not have written.
+      - name: Tests
+        env:
+          FOUNDRY_PROFILE: ci
+        run: forge test --root packages/contracts --no-match-path 'test/fork/*'
+
+  typescript:
+    name: typescript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The ABIs are committed so consumers do not reach into Foundry's build
+      # output. That only holds if they cannot drift from the contracts.
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Build contracts (for ABI comparison)
+        run: forge build --root packages/contracts
+
+      - name: ABIs match the contracts
+        run: pnpm abis:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Typecheck indexer
+        run: pnpm --filter @capital-dao/indexer exec tsc --noEmit
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Internal links resolve
+        run: node scripts/check-docs-links.mjs

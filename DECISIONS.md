@@ -864,3 +864,50 @@ obs= 3378049  spot= 3378049
 The gap between the columns is the lag doing its job. A trader can see that
 shoving the price does not move the decision — the security argument, made
 visible rather than asserted.
+
+---
+
+## D26 — CI, split by what makes it fail
+
+**Decided:** two workflows, divided on a single question — *does this check fail
+when our code changes, or when the world changes?*
+
+**`ci.yml` runs on every push and pull request**, and uses no secrets at all:
+formatting, build with size limits, unit and invariant tests, ABI drift,
+typechecks for both TypeScript packages, and documentation links. Anyone who
+clones this repo can run the whole thing.
+
+**`chain-drift.yml` runs daily**, and holds everything that needs a live chain:
+the ecosystem address verifier, the fork tests pinned and at the tip, and the
+deployment ABI check.
+
+**Why they are separate.** Chain checks fail when Robinhood redeploys something,
+not when a contributor writes a bug. Tying that to a pull request means somebody's
+unrelated branch goes red for a reason they cannot fix or understand, and the
+predictable result is that people learn to ignore a red X. Daily instead means we
+find out within a day, on a run that is obviously about the chain.
+
+It also means secrets are never needed to contribute. Fork pull requests do not
+receive secrets, so a secret-dependent check on PRs fails for outside
+contributors by construction.
+
+**Fuzzing is turned up in CI.** 5,000 runs rather than the local 512. The time is
+free on a machine nobody is waiting on, and the entire value of a fuzzer is
+finding the case a human would not have thought to write.
+
+### The new check, and why it exists
+
+`scripts/check-deployment-abi.mjs` reads every log our deployed contracts have
+emitted and confirms each one is something this repo can still decode.
+
+This is D24 made into a guard. Changing an event's signature changes its topic
+hash, and every consumer built from current ABIs goes blind — while the
+deployment keeps working perfectly for anyone calling it directly. There is no
+compiler error, no failing test, and no symptom until something tries to read the
+chain and quietly finds nothing.
+
+**Verified load-bearing.** Pointed at the current deployment it passes; pointed
+at the superseded one it fails and names both stale event hashes. Without RPC
+credentials it skips rather than failing, so it cannot punish a run that had no
+way to perform it. All three exit codes were checked, because a check that
+reports a failure but exits zero is worse than no check.
