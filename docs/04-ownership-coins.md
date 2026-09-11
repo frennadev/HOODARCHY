@@ -5,7 +5,7 @@
 
 ## What an ownership coin is
 
-An **ownership coin** is the token a company launches on Capital DAO. Holding it
+An **ownership coin** is the token a company launches on Hoodarchy. Holding it
 gives you two things:
 
 1. **A claim on the company's treasury**, enforced by contract.
@@ -28,7 +28,7 @@ derived from a market that couldn't absorb a serious sell order.
 Then the unlocks start, and everyone who bought at the top discovers what the
 other 90% was for.
 
-Capital DAO launches target a **high float from day one** (*initial: majority of
+Hoodarchy launches target a **high float from day one** (*initial: majority of
 supply liquid at launch*). This is worse for the optics of the launch price and
 much better for everything else — the price means something, entering and
 exiting is possible at size, and there's no overhang of insider supply waiting
@@ -52,7 +52,7 @@ gated on being liked by the core team.
 
 ## Supply and distribution
 
-Exact numbers are set per launch. The structural rules Capital DAO enforces:
+Exact numbers are set per launch. The structural rules Hoodarchy enforces:
 
 | Rule | Why it exists |
 | --- | --- |
@@ -64,7 +64,7 @@ Exact numbers are set per launch. The structural rules Capital DAO enforces:
 
 **No hidden mint authority** deserves emphasis. A great many "fixed supply"
 tokens have an owner-gated mint function or an upgradeable proxy that can add
-one. On Capital DAO the token's minting rules are fixed at deployment and any
+one. On Hoodarchy the token's minting rules are fixed at deployment and any
 change is a proposal that must clear its market like anything else.
 
 ## What an ownership coin is *not*
@@ -79,7 +79,7 @@ get hurt.
   no repayment, and no maturity.
 - **It is not a promise of profit.** Companies fail. Treasuries get spent on
   things that don't work. Markets can be wrong for a long time.
-- **It is not insured or guaranteed** by anyone, including Capital DAO.
+- **It is not insured or guaranteed** by anyone, including Hoodarchy.
 
 **Regulatory status: TBD.** Depending on jurisdiction, structure, and how a
 given launch is conducted, an ownership coin may be treated as a security. This
@@ -104,7 +104,7 @@ Neither half works alone. Together they're the whole product.
 
 ## Next
 
-- Launching one: [Launching on Capital DAO](05-launching.md)
+- Launching one: [Launching on Hoodarchy](05-launching.md)
 - What secures the treasury: [The Treasury](06-treasury.md)
 - Buying and trading: [For Traders](08-for-traders.md)
 

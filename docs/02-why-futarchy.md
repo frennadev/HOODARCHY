@@ -68,9 +68,9 @@ That last property is the one people underrate. Futarchy doesn't assume
 participants are honest or well-intentioned. It assumes they're greedy, and
 routes that greed into producing accurate prices.
 
-## The measure Capital DAO uses
+## The measure Hoodarchy uses
 
-Every futarchy needs a metric that defines "better." Capital DAO uses **the
+Every futarchy needs a metric that defines "better." Hoodarchy uses **the
 market value of the company's [ownership coin](04-ownership-coins.md)**.
 
 It's a defensible choice for a company, if not for a government. It's
@@ -82,7 +82,7 @@ alignment, and it's the alignment token holders signed up for.
 It's also a genuinely limited one, and we'd rather say so:
 
 - **Price is noisy.** Markets move for reasons unrelated to the proposal.
-  Capital DAO addresses this by comparing two *simultaneous* markets rather than
+  Hoodarchy addresses this by comparing two *simultaneous* markets rather than
   measuring price before and after — see [How It Works](03-how-it-works.md) —
   which cancels out anything affecting both.
 - **Price is short-horizon.** A market can favour a decision that looks good
@@ -107,7 +107,7 @@ real treasury through real decisions with real money at stake, and demonstrated
 that the mechanism holds outside a thought experiment: markets stayed liquid,
 decisions resolved, and the treasury did what the contracts said it would.
 
-Capital DAO's contribution isn't the mechanism — that's Hanson's, and the
+Hoodarchy's contribution isn't the mechanism — that's Hanson's, and the
 production proof is MetaDAO's. It's bringing a serious implementation to the EVM
 and to a chain where tokenized assets and stablecoin liquidity already
 concentrate.

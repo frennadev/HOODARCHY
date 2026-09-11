@@ -23,7 +23,7 @@ importers:
 
   packages/indexer:
     dependencies:
-      '@capital-dao/chain':
+      '@hoodarchy/chain':
         specifier: workspace:*
         version: link:../chain
       hono:

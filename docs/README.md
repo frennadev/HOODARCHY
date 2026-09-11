@@ -1,11 +1,11 @@
-# Capital DAO — Documentation
+# Hoodarchy — Documentation
 
-> **Status: pre-launch draft.** Capital DAO is in development. Nothing described
+> **Status: pre-launch draft.** Hoodarchy is in development. Nothing described
 > here is deployed, audited, or available to use yet. Parameters marked
 > *initial* are proposals, not commitments. This documentation has **not yet had
 > legal review** — see [Before You Publish](#before-you-publish) below.
 
-Capital DAO is a launch and governance platform built on Robinhood Chain. It
+Hoodarchy is a launch and governance platform built on Robinhood Chain. It
 lets a company raise capital onchain, hand control of its treasury to a market
 rather than to its founders, and make its biggest decisions by asking a simple
 question: *does this make the company more valuable, or less?*
@@ -20,7 +20,7 @@ their answer.
 | If you are… | Read |
 | --- | --- |
 | New to all of this | [Introduction](01-introduction.md), then [Why Futarchy](02-why-futarchy.md) |
-| A founder thinking about raising | [Launching on Capital DAO](05-launching.md) |
+| A founder thinking about raising | [Launching on Hoodarchy](05-launching.md) |
 | A trader or investor | [For Traders](08-for-traders.md), then [Risks](12-risks.md) |
 | An engineer | [Architecture](10-architecture.md), [Why Robinhood Chain](09-why-robinhood-chain.md) |
 | Doing diligence | [Security](11-security.md), [Risks](12-risks.md), [Treasury](06-treasury.md) |
@@ -28,13 +28,13 @@ their answer.
 ## All documents
 
 **The idea**
-1. [Introduction](01-introduction.md) — what Capital DAO is and what it's for
+1. [Introduction](01-introduction.md) — what Hoodarchy is and what it's for
 2. [Why Futarchy](02-why-futarchy.md) — why markets decide better than votes
 3. [How It Works](03-how-it-works.md) — the mechanism, end to end
 
 **The product**
 4. [Ownership Coins](04-ownership-coins.md) — what you actually own
-5. [Launching on Capital DAO](05-launching.md) — the founder's path
+5. [Launching on Hoodarchy](05-launching.md) — the founder's path
 6. [The Treasury](06-treasury.md) — why the money can't walk away
 7. [Pay for Performance](07-pay-for-performance.md) — unlocks tied to results
 8. [For Traders](08-for-traders.md) — how to participate

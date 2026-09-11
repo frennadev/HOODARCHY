@@ -2,15 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {BaseTest} from "../BaseTest.sol";
-import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
-import {UniswapV4PriceSource} from "@capdao/oracle/sources/UniswapV4PriceSource.sol";
+import {RobinhoodChain} from "@hoodarchy/config/RobinhoodChain.sol";
+import {UniswapV4PriceSource} from "@hoodarchy/oracle/sources/UniswapV4PriceSource.sol";
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 /// @notice Environment smoke test.
 ///
-/// This asserts nothing about Capital DAO's own logic — it exists to prove the
+/// This asserts nothing about Hoodarchy's own logic — it exists to prove the
 /// toolchain, RPC, remappings, and address constants are all wired correctly,
 /// and to fail loudly the day one of our assumptions about the chain stops
 /// being true (a token gets redeployed, a decimals value changes, a DEX we

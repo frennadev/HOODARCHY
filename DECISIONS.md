@@ -1,4 +1,4 @@
-# RH Futarchy — Decision Log
+# Hoodarchy — Decision Log
 
 Every significant choice, in plain English: **what we decided, why, and what it
 costs us.** Written so a non-engineer can follow it. Newest decisions go at the
@@ -8,23 +8,30 @@ The detailed technical spec lives in [MECHANISM-REFERENCE.md](MECHANISM-REFERENC
 
 ---
 
-## D1 — The project is called **RH Futarchy**
+## D1 — The project is called **Hoodarchy**
 
-**Decided:** RH Futarchy. Folder stays `robinhood futurachy` for now (renaming a
-folder mid-build breaks paths for no benefit); contracts, docs and package names
-use "RH Futarchy".
+**Decided:** Hoodarchy. The folder stays `robinhood futurachy` (renaming it
+mid-build breaks paths for no benefit); everything else — packages, contracts,
+docs, the `@hoodarchy/` import alias — uses the name.
 
-**Why:** The existing docs called it "Capital DAO", but Capital DAO is now a
-separate, already-deployed product. Two different things sharing one name would
-confuse users and us.
+**Why:** it was "Capital DAO" in the original drafts, then "RH Futarchy" as a
+placeholder, while Capital DAO became a separate, already-deployed product.
+Two products sharing a name is how somebody eventually ships to the wrong one.
 
-**Cost:** The 16 files in `docs/` still say "Capital DAO" and need a pass.
+**Done, and the part that needed care:** "Capital DAO" appears in this repo in
+two different senses. In `docs/` it named *this* project, from before the split.
+In the contracts it refers to the *other* project — the audit whose findings H-1
+and M-1 are the reason D7, D18 and D20 exist. A blanket find-and-replace would
+have quietly rewritten that history into a claim about ourselves, and the
+lessons would have stopped making sense.
 
----
+So the rename was done by meaning rather than by string: 44 references in `docs/`
+became Hoodarchy, two self-references in test files became Hoodarchy, and all 43
+references to the real Capital DAO and its audit were left exactly as they were.
 
 ## D2 — It lives in its own folder, completely separate from Capital DAO
 
-**Decided:** RH Futarchy is its own project with its own git repository. It never
+**Decided:** Hoodarchy is its own project with its own git repository. It never
 imports, links to, or depends on the Capital DAO code. If we want something from
 Capital DAO, we copy it in.
 

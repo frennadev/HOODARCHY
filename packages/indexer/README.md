@@ -5,7 +5,7 @@ price series, trades, and positions.
 
 ```
 pnpm install
-pnpm --filter @capital-dao/indexer dev
+pnpm --filter @hoodarchy/indexer dev
 ```
 
 Needs `PONDER_RPC_URL_4663` and `DATABASE_URL` (see `.env.example` at the repo

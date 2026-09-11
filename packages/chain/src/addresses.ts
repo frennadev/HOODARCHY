@@ -64,7 +64,7 @@ export const uniswapV3FeeTiers = {
  * confirmed. The Capital DAO raise factory seeds v2 pools on mainnet through
  * this router, and the factory reports 41,375 pairs.
  *
- * RH Futarchy uses v2 for per-proposal conditional pools (decision D5): a v2
+ * Hoodarchy uses v2 for per-proposal conditional pools (decision D5): a v2
  * pair is two token balances, which splits cleanly into complete sets for
  * shared liquidity, and is trivial for the lagged-observation oracle to read.
  */
@@ -129,7 +129,7 @@ export const chainlink = {
 } as const;
 
 /** Our own deployments. Populated by the deploy scripts, per network. */
-export const capitalDao = {
+export const ourDeployments = {
   4663: {
     // filled in at deploy time
   },

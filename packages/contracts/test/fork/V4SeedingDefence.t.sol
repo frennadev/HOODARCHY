@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {BaseTest} from "../BaseTest.sol";
-import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
+import {RobinhoodChain} from "@hoodarchy/config/RobinhoodChain.sol";
 
 /// @dev The slice of the V4 singleton this scenario needs.
 interface IV4PoolManager {

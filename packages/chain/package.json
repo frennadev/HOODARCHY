@@ -1,5 +1,5 @@
 {
-  "name": "@capital-dao/chain",
+  "name": "@hoodarchy/chain",
   "version": "0.0.0",
   "private": true,
   "description": "Verified Robinhood Chain network definitions and contract addresses. Single source of truth for contracts, web, and indexer.",

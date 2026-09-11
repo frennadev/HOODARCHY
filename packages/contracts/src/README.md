@@ -1,4 +1,4 @@
-# RH Futarchy — contracts
+# Hoodarchy — contracts
 
 | Path | What it is |
 | --- | --- |

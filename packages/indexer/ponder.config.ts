@@ -7,7 +7,7 @@ import {
   futarchyExecutorAbi,
   futarchyGovernorAbi,
   laggedTwapOracleAbi,
-} from "@capital-dao/chain";
+} from "@hoodarchy/chain";
 
 /**
  * Robinhood Chain mainnet.

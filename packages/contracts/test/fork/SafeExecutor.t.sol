@@ -5,8 +5,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {BaseTest} from "../BaseTest.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
-import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
-import {FutarchyExecutor, IExecutionSource} from "@capdao/governance/FutarchyExecutor.sol";
+import {RobinhoodChain} from "@hoodarchy/config/RobinhoodChain.sol";
+import {FutarchyExecutor, IExecutionSource} from "@hoodarchy/governance/FutarchyExecutor.sol";
 
 interface ISafeProxyFactory {
     function createProxyWithNonce(address singleton, bytes memory initializer, uint256 saltNonce)

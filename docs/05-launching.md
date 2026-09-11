@@ -1,9 +1,9 @@
-# Launching on Capital DAO
+# Launching on Hoodarchy
 
 > **Status: pre-launch draft.** Applications are not open yet. Process details
 > and all figures below are provisional.
 
-This page is for founders considering raising capital on Capital DAO.
+This page is for founders considering raising capital on Hoodarchy.
 
 ## Read this part first
 
@@ -39,7 +39,7 @@ the difference between raising and not raising.
 You submit what the company is, who's building it, what you'd raise, and what
 you'd do with it.
 
-Capital DAO **curates**. We are not a permissionless launchpad and we don't
+Hoodarchy **curates**. We are not a permissionless launchpad and we don't
 intend to become one. Early launches will be few and selected deliberately,
 because the mechanism's credibility depends on the first cohort being real. This
 is a deliberate constraint on growth and we accept it.
@@ -49,7 +49,7 @@ is a deliberate constraint on growth and we accept it.
 If accepted, we work through:
 
 - **Raise size and valuation** — what you're raising and at what terms
-- **Token supply and distribution** — subject to Capital DAO's structural rules
+- **Token supply and distribution** — subject to Hoodarchy's structural rules
   ([Ownership Coins](04-ownership-coins.md))
 - **Milestones** — the specific, checkable conditions your allocation unlocks
   against ([Pay for Performance](07-pay-for-performance.md))

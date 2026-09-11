@@ -1,8 +1,10 @@
 # Architecture
 
-> **Status: pre-launch draft.** This describes intended design. **No Capital DAO
-> contracts have been written.** Sections marked *open question* are genuinely
-> undecided.
+> **Status: partly built.** This page still describes some intended design, but
+> the core is now written and deployed: conditional vault, lagged-price oracle,
+> conditional AMM, Governor and Executor. Where this page and the decision log
+> disagree, **[DECISIONS.md](../DECISIONS.md) is authoritative** — several
+> "open questions" below have since been answered by building. Unaudited.
 
 Audience: engineers, auditors, and anyone doing technical diligence.
 
@@ -72,7 +74,7 @@ work.
 
 **It's built for a much harder problem than ours.** CTF supports arbitrary
 outcome partitions, nested conditions, and ERC-1155 position IDs derived from
-collection hashes. Capital DAO needs exactly one shape: *binary, pass/fail, one
+collection hashes. Hoodarchy needs exactly one shape: *binary, pass/fail, one
 underlying, redeem 1:1*. That's a few hundred lines of auditable 0.8 code with
 ERC-20 conditional tokens, which compose with Uniswap v3 directly and are far
 easier for wallets, indexers, and auditors to reason about than ERC-1155

@@ -1,9 +1,9 @@
 {
-  "name": "@capital-dao/indexer",
+  "name": "@hoodarchy/indexer",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Indexes RH Futarchy proposals, markets, prices and positions into a queryable database.",
+  "description": "Indexes Hoodarchy proposals, markets, prices and positions into a queryable database.",
   "scripts": {
     "dev": "ponder dev",
     "start": "ponder start",
@@ -11,10 +11,10 @@
     "serve": "ponder serve"
   },
   "dependencies": {
-    "@capital-dao/chain": "workspace:*",
     "ponder": "0.17.10",
     "viem": "^2.21.0",
-    "hono": "^4.13.0"
+    "hono": "^4.13.0",
+    "@hoodarchy/chain": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

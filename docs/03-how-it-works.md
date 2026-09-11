@@ -8,7 +8,7 @@ this one.
 
 ## The question every proposal asks
 
-A proposal on Capital DAO is not put to a vote. It's put to two markets, which
+A proposal on Hoodarchy is not put to a vote. It's put to two markets, which
 together answer one question:
 
 > **Is this company worth more if we do this, or if we don't?**

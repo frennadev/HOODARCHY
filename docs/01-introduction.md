@@ -1,6 +1,7 @@
 # Introduction
 
-> **Status: pre-launch draft.** Nothing described here is deployed or available
+> **Status: pre-launch draft.** The governance mechanism is built and has run
+> end to end on mainnet, but the product described here is not deployed or available
 > to use yet.
 
 ## The problem
@@ -28,18 +29,18 @@ governance process that can be steered by the same people. When a team decides
 to walk away with the money, the structure rarely stops them. It wasn't built
 to.
 
-## What Capital DAO does
+## What Hoodarchy does
 
-Capital DAO is a platform for launching and governing companies where **markets
+Hoodarchy is a platform for launching and governing companies where **markets
 make the decisions and the treasury is structurally out of the founders'
 reach**.
 
-Concretely, three things are true of every company launched on Capital DAO:
+Concretely, three things are true of every company launched on Hoodarchy:
 
 **1. Decisions are settled by markets, not votes.**
 
 When someone proposes a decision — a hire, an acquisition, a spend, a change of
-direction — Capital DAO opens two markets: one that prices the company's token
+direction — Hoodarchy opens two markets: one that prices the company's token
 *assuming the proposal passes*, and one that prices it *assuming the proposal
 fails*. Traders buy and sell in both. If the market says the company is worth
 more with the proposal than without it, the proposal executes automatically. If
@@ -95,7 +96,7 @@ proven. What's missing is a serious implementation on an EVM chain where
 tokenized real-world assets, deep stablecoin liquidity, and a large existing
 user base already live.
 
-That's what Capital DAO is building, on [Robinhood
+That's what Hoodarchy is building, on [Robinhood
 Chain](09-why-robinhood-chain.md).
 
 ## Where to go next

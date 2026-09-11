@@ -644,33 +644,35 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
 
 ---
 
-## 11. Open decisions (blocking, answer before coding)
+## 11. Open decisions
 
-1. **Conditional token standard** — Gnosis-CTF-shaped ERC-1155, or ERC-20 clones
-   per outcome? ERC-1155 matches the reference and composes well; ERC-20 clones
-   remove the receive-hook reentrancy surface (§6.3.1) and drop straight into
-   existing AMM/router tooling. *Leaning ERC-20 clones for the pools, ERC-1155
-   only if composability demands it.*
-2. ~~**Preseed defence for conditional pools**~~ — **ANSWERED (D18).** On V4 the
-   attack is not a donation but a *pre-creation*: pool creation is
-   permissionless, needs no tokens, works before the conditional tokens exist,
-   and cannot be repeated — so an attacker can pin a proposal's pool at a
-   nonsense price for gas and block it permanently. Defence is the same
-   principle as Capital DAO's: absorb, never reject. An empty pool has nothing
-   to trade against, so the seeder reclaims the price for ~111k gas and no token
-   movement. Verified against the live PoolManager in
-   `test/fork/V4SeedingDefence.t.sol`.
-3. **`maxChangePerSecond` exact value**, and the timestamp-gap freeze threshold N.
-4. **Uniswap V2 or V3 for the parent spot pool?** V2 is confirmed in production
-   here and is simpler to split into complete sets; V3 gives concentrated
-   liquidity but makes shared-liquidity borrowing much harder. *Leaning V2.*
-5. **Naming.** The docs in `docs/` currently brand this "Capital DAO". The new
-   brief treats Capital DAO as a separate, secondary product. Decide the name
-   before the docs and contracts diverge further.
-6. **Chainlink** — get feed addresses and confirm Data Feeds vs Data Streams.
-   Blocking for template B.
+Two are genuinely open. Four were answered by building, and are listed
+underneath so the list stops hiding the real blockers behind settled ones.
 
----
+### Still open
+
+1. **`maxChangePerSecond`, and the timestamp-gap freeze threshold.** Every
+   deployment so far has used placeholder values chosen to make a test or a demo
+   run in reasonable time — the mainnet smoke test used 20,000/s with a 30s cap,
+   which is far too fast for anything real. §6.4 fixes the shape of the answer
+   ("a 2x move should need ~35 minutes of unbroken pressure") but the number has
+   to be derived from the treasury being defended and the depth of the books
+   defending it. **This is the last mechanism parameter without a real value.**
+
+2. **Chainlink.** Feed addresses on this chain are still unconfirmed, and we do
+   not know whether the deployment is Data Feeds, Data Streams, or both. Blocks
+   template B (§5.6) entirely — the Stock-Token metric, which is the thing only
+   this chain can do. Unchanged since July; it needs someone to ask Robinhood
+   rather than more probing.
+
+### Answered by building
+
+| Was | Answer |
+| --- | --- |
+| Conditional token standard: ERC-1155 or ERC-20 clones? | **ERC-20 clones** (D6). Built. No receive-hook reentrancy surface, and they drop into any AMM. |
+| Preseed defence for conditional pools | **Absorb, never reject** (D18), proven against the live V4 PoolManager. Moot for the conditional pools themselves now that they are our own CPMM with stored reserves (D19) — the bug class is absent rather than defended. |
+| Uniswap V2 or V3 for the parent spot pool? | **V4** (D17). It holds roughly 8x the stablecoin depth of all V3 USDG/WETH tiers combined. The *conditional* pools are not Uniswap at all (D19). |
+| Naming | **Hoodarchy** (D1). |
 
 ## 12. Where things live
 

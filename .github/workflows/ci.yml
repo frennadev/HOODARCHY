@@ -73,7 +73,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Typecheck indexer
-        run: pnpm --filter @capital-dao/indexer exec tsc --noEmit
+        run: pnpm --filter @hoodarchy/indexer exec tsc --noEmit
 
   docs:
     name: docs

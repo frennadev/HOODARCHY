@@ -26,7 +26,7 @@ The market pricing the company **assuming the proposal is rejected**. Must be as
 liquid as the pass market for the comparison to mean anything.
 
 ### Float
-The portion of supply actually liquid and tradeable. Capital DAO targets high
+The portion of supply actually liquid and tradeable. Hoodarchy targets high
 float at launch, so the price is real and exits are possible.
 
 ### Futarchy
@@ -44,7 +44,7 @@ tokens. Settled onchain where possible, by oracle otherwise. See
 [Pay for Performance](07-pay-for-performance.md).
 
 ### Ownership coin
-The token a company launches on Capital DAO. Carries a contract-enforced claim
+The token a company launches on Hoodarchy. Carries a contract-enforced claim
 on the treasury and influence through market participation. Not equity, not
 debt, not a promise of profit. See [Ownership Coins](04-ownership-coins.md).
 
@@ -103,7 +103,7 @@ The native stablecoin on Robinhood Chain, used as the default quote asset.
 **Has 6 decimals, not 18** — a recurring source of catastrophic accounting bugs.
 
 ### Vesting
-Release of allocated tokens over time. Capital DAO replaces time-based vesting
+Release of allocated tokens over time. Hoodarchy replaces time-based vesting
 with milestone-based unlocks.
 
 ---

@@ -1,8 +1,8 @@
 {
-  "name": "capital-dao",
+  "name": "hoodarchy",
   "version": "0.0.0",
   "private": true,
-  "description": "Capital DAO \u2014 futarchy-governed launches and treasury control on Robinhood Chain.",
+  "description": "Hoodarchy \u2014 futarchy-governed treasuries on Robinhood Chain.",
   "packageManager": "pnpm@10.13.1",
   "engines": {
     "node": ">=20"
@@ -23,7 +23,7 @@
     "abis:check": "node scripts/export-abis.mjs --check",
     "typecheck": "tsc --noEmit",
     "deployment:check": "node scripts/check-deployment-abi.mjs",
-    "verify": "pnpm fmt:check && pnpm build && pnpm abis:check && pnpm typecheck && pnpm --filter @capital-dao/indexer exec tsc --noEmit && pnpm docs:check && forge test --root packages/contracts --no-match-path 'test/fork/*'",
+    "verify": "pnpm fmt:check && pnpm build && pnpm abis:check && pnpm typecheck && pnpm --filter @hoodarchy/indexer exec tsc --noEmit && pnpm docs:check && forge test --root packages/contracts --no-match-path 'test/fork/*'",
     "verify:chain": "pnpm chain:check && pnpm test:fork && pnpm test:fork:drift && pnpm deployment:check"
   },
   "devDependencies": {

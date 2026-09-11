@@ -1,6 +1,8 @@
 # Security
 
-> **Status: pre-launch draft.** **No Capital DAO contracts have been written,
+> **Status: pre-launch draft.** **The core contracts are now written, tested
+> (129 tests) and deployed to mainnet as a smoke test — see DEPLOYMENTS.md.
+> They are NOT audited,
 > audited, or deployed.** This page describes the security commitments we intend
 > to hold ourselves to. It is a statement of intent, not a record of completed
 > work.

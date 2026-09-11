@@ -17,7 +17,7 @@ schedule unrelated to whether anything worked.
 Holders end up funding the *option* on a team's effort rather than the effort
 itself.
 
-## What Capital DAO does instead
+## What Hoodarchy does instead
 
 Team and advisor allocations unlock against **milestones**, not dates.
 
@@ -113,6 +113,6 @@ that tracks the company's performance rather than the calendar.
 
 ## Next
 
-- [Launching on Capital DAO](05-launching.md) — where milestones get set
+- [Launching on Hoodarchy](05-launching.md) — where milestones get set
 - [The Treasury](06-treasury.md)
 - [How It Works](03-how-it-works.md)

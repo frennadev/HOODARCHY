@@ -4,7 +4,7 @@
 
 ## Basics
 
-**What is Capital DAO in one sentence?**
+**What is Hoodarchy in one sentence?**
 A platform for launching companies onchain where markets — not votes — make the
 decisions, and where the treasury is structurally out of the founders' reach.
 
@@ -19,12 +19,12 @@ whose money can't be taken.
 
 **How is this different from a normal DAO?**
 A normal DAO votes. Token voting measures who holds the most tokens, not what's
-true, and rewards nobody for being right. Capital DAO replaces the vote with a
+true, and rewards nobody for being right. Hoodarchy replaces the vote with a
 market where being right pays and being wrong costs.
 
 **Is this just a MetaDAO clone?**
 Futarchy is Robin Hanson's idea, and MetaDAO proved it works in production on
-Solana. We're not claiming either. Capital DAO is a fresh EVM implementation on
+Solana. We're not claiming either. Hoodarchy is a fresh EVM implementation on
 Robinhood Chain — different chain, different tech stack, purpose-built contracts
 rather than a port. The mechanism is prior art we're building on, and we'd
 rather say so than pretend otherwise.
@@ -80,7 +80,7 @@ into pass and fail versions is *not* a bet — you can always recombine. You tak
 a position only by selling one side. And yes: the losing side goes to exactly
 zero on every proposal.
 
-**Is there a Capital DAO platform token?**
+**Is there a Hoodarchy platform token?**
 **TBD.** Not decided. If there is one, its terms will be published in full
 before any launch.
 

@@ -20,7 +20,11 @@
 | ⬜ | Legal review of documentation and token structure |
 | ⬜ | Resolve open architecture questions — oracle design above all |
 
-**No contracts have been written.** That's the honest state of things.
+**The core contracts are written, tested and running on mainnet.** A market
+decided a proposal and a Safe treasury paid out, with no human signature in the
+path (see DEPLOYMENTS.md). They are unaudited, the deployment uses throwaway
+tokens with compressed windows, and the treasury handover step was not
+performed — so it demonstrates the mechanism rather than being usable.
 
 ## What comes next
 

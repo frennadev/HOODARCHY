@@ -8,11 +8,11 @@ import {console2} from "forge-std/console2.sol";
 
 import {BaseTest} from "../BaseTest.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
-import {ConditionalAmm} from "@capdao/amm/ConditionalAmm.sol";
-import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
-import {FutarchyExecutor} from "@capdao/governance/FutarchyExecutor.sol";
-import {FutarchyGovernor} from "@capdao/governance/FutarchyGovernor.sol";
-import {LaggedTwapOracle} from "@capdao/oracle/LaggedTwapOracle.sol";
+import {ConditionalAmm} from "@hoodarchy/amm/ConditionalAmm.sol";
+import {RobinhoodChain} from "@hoodarchy/config/RobinhoodChain.sol";
+import {FutarchyExecutor} from "@hoodarchy/governance/FutarchyExecutor.sol";
+import {FutarchyGovernor} from "@hoodarchy/governance/FutarchyGovernor.sol";
+import {LaggedTwapOracle} from "@hoodarchy/oracle/LaggedTwapOracle.sol";
 
 /// @notice A full rehearsal: deploy the whole system against a real Safe on a
 ///         forked chain, then run a proposal through it until the treasury pays.

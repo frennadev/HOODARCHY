@@ -64,7 +64,7 @@ library RobinhoodChain {
 
     /// @dev Confirmed live: 41,375 pairs at block 57,906,854. The Capital DAO
     ///      raise factory seeds V2 pools on mainnet through this router.
-    ///      RH Futarchy uses V2 for per-proposal conditional pools (D5).
+    ///      Hoodarchy uses V2 for per-proposal conditional pools (D5).
     address internal constant UNIV2_FACTORY = 0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f;
     address internal constant UNIV2_ROUTER = 0x89e5DB8B5aA49aA85AC63f691524311AEB649eba;
 

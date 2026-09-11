@@ -1,11 +1,11 @@
 # The Treasury
 
-> **Status: pre-launch draft.** Contracts described here are not built, audited,
+> **Status: pre-launch draft.** Contracts described here are built but not audited,
 > or deployed.
 
 ## The claim
 
-When a company raises on Capital DAO, the money goes into a treasury contract
+When a company raises on Hoodarchy, the money goes into a treasury contract
 that **the founders cannot withdraw from**.
 
 Not "shouldn't." Not "have promised not to." The contract exposes no function

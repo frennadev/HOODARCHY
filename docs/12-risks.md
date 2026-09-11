@@ -21,7 +21,7 @@ materially harm you, do not participate.
 
 **Futarchy is lightly tested at scale.** The theory is 25 years old and the
 production track record is a few years long, on one chain, at limited scale.
-Capital DAO's implementation is new. Mechanisms that work in theory and in
+Hoodarchy's implementation is new. Mechanisms that work in theory and in
 limited practice can fail in ways nobody anticipated.
 
 **Markets can be wrong.** Futarchy produces the market's best estimate. Best
@@ -30,7 +30,7 @@ company.
 
 **Markets optimise the short term.** Settlement happens over days. Decisions
 that look good over a 7-day window can be bad over five years. This is a known,
-unsolved weakness of futarchy — not something Capital DAO has fixed.
+unsolved weakness of futarchy — not something Hoodarchy has fixed.
 
 **Thin markets price badly.** Every protection depends on liquid markets policed
 by arbitrageurs. New launches and small companies will have thin conditional
@@ -70,7 +70,7 @@ executes even if everyone later agrees it was a mistake.
 startups fail everywhere. The structure protects against *theft*. It does not
 protect against a business simply not working.
 
-**Curation is not endorsement.** Capital DAO selecting a project means it met our
+**Curation is not endorsement.** Hoodarchy selecting a project means it met our
 criteria. It is not a judgment that the business will succeed or that the token
 is a good investment. We will select projects that fail.
 
@@ -126,7 +126,7 @@ malicious things. The market is the defence, and it is not perfect.
 
 ## Platform risks
 
-**Capital DAO is early.** We are a small team building something novel. We may
+**Hoodarchy is early.** We are a small team building something novel. We may
 fail, run out of funding, or make serious mistakes.
 
 **Frontends can go down or be compromised.** Contracts are permissionless, but
@@ -141,7 +141,7 @@ Nothing in this documentation is investment, financial, legal, or tax advice.
 Nothing here is an offer to sell, or a solicitation of an offer to buy, any
 security or financial instrument. No relationship is created by reading this.
 
-Capital DAO makes no representation as to the accuracy or completeness of this
+Hoodarchy makes no representation as to the accuracy or completeness of this
 documentation and accepts no liability for reliance on it. Forward-looking
 statements — plans, roadmaps, intended parameters — are not commitments and will
 change.

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {RobinhoodChain} from "@capdao/config/RobinhoodChain.sol";
+import {RobinhoodChain} from "@hoodarchy/config/RobinhoodChain.sol";
 import {Test} from "forge-std/Test.sol";
 
-/// @notice Shared base for Capital DAO tests.
+/// @notice Shared base for Hoodarchy tests.
 /// @dev Inherit this rather than `Test` directly so every test gets the same
 ///      named actors and unit helpers. Keeps tests readable and stops each new
 ///      test file from inventing its own `alice`.
