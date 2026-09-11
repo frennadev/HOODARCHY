@@ -741,3 +741,58 @@ past the 24KB limit. It is a size workaround, not a design idea, and it is worth
 knowing that so nobody looks for deeper meaning in it.
 
 **121 tests pass.**
+
+---
+
+## D23 — It works on a real chain
+
+**What happened:** the whole system was deployed to Robinhood Chain mainnet and
+ran one proposal end to end. A market decided, and a treasury paid out. Addresses
+and transaction details are in [DEPLOYMENTS.md](DEPLOYMENTS.md).
+
+Treasury 500,000 → 380,000 tUSDG. Payee 0 → 120,000. No human signature anywhere
+in the path.
+
+**The part worth seeing.** A trade moved the pass market 69% in a single
+transaction. The recorded price did not follow it:
+
+```
+2000000  ->  2600000  ->  3080000  ->  3378049
+```
+
+Three cranks, about 75 seconds, each step capped. That is the entire security
+argument — D4's "you must hold a false price in the open, where others can trade
+against you" — happening on a public chain rather than in a test. The settled
+average came out at 2,721,374, below the final observation of 3,378,049, because
+it includes the climb. The lag is visible in the number.
+
+**Deliberately a smoke test.** Throwaway tokens, and windows compressed from
+24h/72h to 60s/300s so the lifecycle fits in one sitting. Deploying with
+production windows would have meant a four-day wait to learn anything.
+
+**What it cost:** deployment about 0.0009 ETH, the full proposal another 0.0006,
+cranking a few cents. Roughly 0.0025 ETH for the whole exercise, against the
+0.0092 provided.
+
+### Two things this surfaced that testing had not
+
+**The deployer briefly owns the treasury, and that step is easy to skip.** A
+Safe's first module can only be enabled by the Safe itself, which needs a real
+owner. So the deployer holds the keys for two transactions and hands them over at
+the end. **On this deployment the handover was not performed** — an automated
+safety check blocked the transaction as irreversible, and it was the right call
+for a throwaway Safe. But it means the deployment on mainnet today is *not*
+unruggable: the deployer can still move those funds directly. That is recorded
+plainly in DEPLOYMENTS.md rather than quietly left out, because a half-deployed
+treasury that looks finished is exactly the kind of thing that gets trusted by
+mistake.
+
+**Simulating a transaction is not the same as sending one.** `cast call` on
+`propose` reverted with an arithmetic underflow, which looked like a contract
+bug. It was not: the simulation defaults to sending from the zero address, which
+holds no stake, so the token's balance arithmetic underflowed. The real
+transaction succeeded. Worth remembering before chasing a phantom bug — and worth
+noting that the proposal id had to be recomputed by hand afterwards, because the
+failed simulation was where that value was supposed to come from.
+
+**127 tests still pass**, plus 27 against the live chain tip.

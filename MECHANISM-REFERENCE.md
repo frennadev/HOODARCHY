@@ -4,11 +4,14 @@
 > outlive any individual work session. If something here goes stale, edit it —
 > do not fork it into a second document.
 >
-> Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (125 tests). The full lifecycle runs end to end, and the
-> deployment is rehearsed against a real Safe on a forked chain. Per-proposal conditional pools are our own CPMM, ported
-> from MetaDAO per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
-> Governor, Executor, pool seeding and launchpad still to come.
+> Status: the full mechanism is built and tested (127 tests, 27 of them against
+> a live chain) — conditional vault, lagged-price oracle, conditional AMM,
+> Governor and Executor. **Deployed to Robinhood Chain mainnet and run end to
+> end on 2026-09-11**: a market decided a proposal and a Safe treasury paid out.
+> See [DEPLOYMENTS.md](DEPLOYMENTS.md), including what that deployment does *not*
+> yet do. Per-proposal conditional pools are our own CPMM, ported from MetaDAO
+> per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
+> Still to come: shared liquidity, launchpad, indexer and web.
 > Last verified against chain: 2026-09-09.
 
 ---
