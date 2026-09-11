@@ -206,7 +206,7 @@ contract ConditionalAmmTest is Test {
 
     function _attachOracle() internal returns (LaggedTwapOracle o) {
         // Sized so doubling the observation takes ~35 minutes, as in D8.
-        o = new LaggedTwapOracle(address(amm), uint256(2e6) / 2100, 24 hours, 5 minutes);
+        o = new LaggedTwapOracle(address(amm), uint256(2e6) / 2100, 24 hours, 5 minutes, 72 hours);
         vm.prank(governor);
         amm.setOracle(address(o));
         o.start(2e6);
@@ -241,7 +241,7 @@ contract ConditionalAmmTest is Test {
 
     function test_PoolTradesBeforeTheOracleIsStarted() public {
         _seed();
-        LaggedTwapOracle o = new LaggedTwapOracle(address(amm), 1e3, 24 hours, 5 minutes);
+        LaggedTwapOracle o = new LaggedTwapOracle(address(amm), 1e3, 24 hours, 5 minutes, 72 hours);
         vm.prank(governor);
         amm.setOracle(address(o));
         // Deliberately not started.
@@ -254,7 +254,7 @@ contract ConditionalAmmTest is Test {
     // ------------------------------------------------------------ access etc.
 
     function test_OnlyGovernorSetsTheOracleAndOnlyOnce() public {
-        LaggedTwapOracle o = new LaggedTwapOracle(address(amm), 1e3, 24 hours, 5 minutes);
+        LaggedTwapOracle o = new LaggedTwapOracle(address(amm), 1e3, 24 hours, 5 minutes, 72 hours);
 
         vm.expectRevert(abi.encodeWithSelector(ConditionalAmm.Unauthorized.selector, alice));
         vm.prank(alice);

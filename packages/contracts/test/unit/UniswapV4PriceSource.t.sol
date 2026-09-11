@@ -112,7 +112,7 @@ contract UniswapV4PriceSourceTest is Test {
     function test_WithheldPriceFreezesTheOracleRatherThanCrashingIt() public {
         _setPool(SQRT_ONE, 1e18);
         LaggedTwapOracle oracle =
-            new LaggedTwapOracle(address(source), WAD / 2100, 24 hours, 5 minutes);
+            new LaggedTwapOracle(address(source), WAD / 2100, 24 hours, 5 minutes, 72 hours);
         oracle.start(WAD);
 
         manager.setUnlocked(true);

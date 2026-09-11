@@ -30,7 +30,11 @@ contract LaggedTwapOracleTest is Test {
         pair = new MockV2Pair(BASE, QUOTE);
         _setPrice(ONE);
         oracle = new LaggedTwapOracle(
-            address(new UniswapV2PriceSource(address(pair), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+            address(new UniswapV2PriceSource(address(pair), BASE)),
+            RATE,
+            DELAY,
+            MAX_STEP_ELAPSED,
+            WINDOW
         );
         oracle.start(ONE);
     }
@@ -174,7 +178,11 @@ contract LaggedTwapOracleTest is Test {
         MockV2Pair fresh = new MockV2Pair(BASE, QUOTE);
         fresh.setReserves(uint112(1e18), uint112(999_999e18)); // dusted to a silly price
         LaggedTwapOracle o = new LaggedTwapOracle(
-            address(new UniswapV2PriceSource(address(fresh), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+            address(new UniswapV2PriceSource(address(fresh), BASE)),
+            RATE,
+            DELAY,
+            MAX_STEP_ELAPSED,
+            WINDOW
         );
 
         o.start(ONE); // anchor is supplied, not read
@@ -186,7 +194,11 @@ contract LaggedTwapOracleTest is Test {
 
     function test_PokeBeforeStartReverts() public {
         LaggedTwapOracle o = new LaggedTwapOracle(
-            address(new UniswapV2PriceSource(address(pair), BASE)), RATE, DELAY, MAX_STEP_ELAPSED
+            address(new UniswapV2PriceSource(address(pair), BASE)),
+            RATE,
+            DELAY,
+            MAX_STEP_ELAPSED,
+            WINDOW
         );
         vm.expectRevert(LaggedTwapOracle.NotStarted.selector);
         o.poke();
@@ -212,5 +224,103 @@ contract LaggedTwapOracleTest is Test {
             ? oracle.observation() - before
             : before - oracle.observation();
         assertLe(moved, maxStep);
+    }
+
+    // -------------------------------------------------- the settlement window
+
+    /// @dev The attack this window exists to stop. An attacker pays the real
+    ///      cost of pushing the observation near the end of trading, then simply
+    ///      declines to finalise. If the average ran to "now", every further
+    ///      second would be credited at their manipulated value and patience
+    ///      alone would carry the vote. The window closes on schedule instead.
+    function test_ATTACK_DelayingFinalisationCannotAmplifyAManipulation() public {
+        // Honest trading for the whole window, bar the last stretch.
+        vm.warp(oracle.twapActiveFrom());
+        _crank(WINDOW - 1 hours, 60);
+
+        // Attacker slams spot and holds it into the close.
+        _setPrice(ONE * 100);
+        _crank(1 hours, 60);
+
+        uint256 atClose = oracle.currentTwap();
+
+        // Now they wait a month, still holding the fake price, still cranking.
+        _crank(30 days, 1 hours);
+
+        assertEq(oracle.currentTwap(), atClose, "waiting changed the settled average");
+    }
+
+    function test_TwapFreezesOnceTheWindowCloses() public {
+        vm.warp(oracle.twapActiveFrom());
+        _crank(WINDOW - 1 hours, 60);
+
+        // Leave the observation far from the running average. With the two equal
+        // this test passes whether or not the window is clamped, and proves
+        // nothing — the gap is what makes extra time visible.
+        _setPrice(ONE * 100);
+        _crank(1 hours, 60);
+
+        uint256 settled = oracle.currentTwap();
+        assertTrue(oracle.isSettled(), "should be settled at the close");
+
+        skip(1);
+        assertEq(oracle.currentTwap(), settled, "moved one second later");
+        skip(365 days);
+        assertEq(oracle.currentTwap(), settled, "moved a year later");
+    }
+
+    /// @dev Cranking after the close must not add to a settled average, or the
+    ///      freeze is cosmetic.
+    function test_PokingAfterTheCloseDoesNotMoveTheAverage() public {
+        vm.warp(oracle.twapActiveFrom());
+        _crank(WINDOW, 60);
+        uint256 settled = oracle.currentTwap();
+
+        _setPrice(ONE * 50);
+        _crank(7 days, 60);
+
+        assertEq(oracle.currentTwap(), settled, "a late crank polluted the average");
+    }
+
+    /// @dev A gap straddling the close is credited only up to the close. This is
+    ///      the realistic shape of the attack: stop cranking, let the elevated
+    ///      observation stand, and poke once much later.
+    function test_AGapSpanningTheCloseIsCreditedOnlyToTheClose() public {
+        vm.warp(oracle.twapActiveFrom());
+        _crank(WINDOW - 2 hours, 60);
+
+        // Observation left well above the average before the crank stops.
+        _setPrice(ONE * 100);
+        _crank(1 hours, 60);
+
+        // What the answer should be, read exactly at the close.
+        vm.warp(oracle.twapEndsAt());
+        uint256 atClose = oracle.currentTwap();
+
+        // Nobody poked across the boundary; someone pokes ten days later.
+        vm.warp(oracle.twapEndsAt() + 10 days);
+        oracle.poke();
+
+        assertEq(oracle.currentTwap(), atClose, "time past the close was credited");
+        assertTrue(oracle.isSettled());
+    }
+
+    function test_IsSettledTracksTheWindow() public {
+        assertFalse(oracle.isSettled(), "settled before trading even began");
+        vm.warp(oracle.twapActiveFrom());
+        assertFalse(oracle.isSettled(), "settled at the open");
+        vm.warp(oracle.twapEndsAt() - 1);
+        assertFalse(oracle.isSettled(), "settled one second early");
+        vm.warp(oracle.twapEndsAt());
+        assertTrue(oracle.isSettled(), "not settled at the close");
+    }
+
+    function test_ConstructorRejectsAZeroWindow() public {
+        // Built first: expectRevert binds to the next call, and a nested
+        // construction here would absorb it instead of the oracle.
+        address src = address(new UniswapV2PriceSource(address(pair), BASE));
+
+        vm.expectRevert(LaggedTwapOracle.InvalidConfig.selector);
+        new LaggedTwapOracle(src, RATE, DELAY, MAX_STEP_ELAPSED, 0);
     }
 }

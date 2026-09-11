@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (71 tests passing — 57 unit, 14 against the live chain):**
+**Built and tested (77 tests passing — 63 unit, 14 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -564,3 +564,53 @@ so nothing depends on a bot remembering to poke — but the security-critical
 arithmetic stays in the one small contract we have already attacked in tests, and
 the pool cannot corrupt it. The update happens **before** a trade is applied, so
 no one can move the price and collect the movement in the same transaction.
+
+---
+
+## D20 — The slow price is averaged over a **window that closes on schedule**, so
+waiting cannot change a decision
+
+**Decided:** Each proposal's recorded average runs from the end of the quiet
+period to a fixed end time, and stops. Once that moment passes the number is
+frozen — reading it a second later, a day later or a year later gives the
+identical answer.
+
+**Why: it was a live hole, and a bad one.** Our recorder averaged from the start
+of trading up to *whenever someone asked*. That means whoever calls "finalise"
+chooses the end point, and an attacker does not have to call it at all.
+
+The attack: spend the real, expensive ~35 minutes pushing the price near the end
+of trading — that part is supposed to be costly, and it is. Then simply **decline
+to finalise**. Every additional second keeps crediting the average at the
+manipulated price. Patience converts a bounded, expensive manipulation into an
+unbounded free one.
+
+**How bad, measured.** In the test, after an hour of pushing at the close the
+average sits at **1.01** — the manipulation barely registers, exactly as
+designed. Wait thirty days without finalising and the same average reads
+**49.11**. A proposal needs to win by 3%. This wins by a factor of a thousand,
+and the only thing it costs is time.
+
+**This is a bug we had already written down.** Audit finding M-1 on Capital DAO
+was the same shape: a value read at a moment someone chooses is a value they
+control. Our own spec says in §6.2(b) to *"prefer state fixed by elapsed time
+rather than by a transaction someone chooses to send."* The recorder did the
+opposite. Writing the rule down did not apply it.
+
+It also matters against the chain operator. D8 promised that Robinhood delaying
+transactions could postpone a decision but never change one. That promise was not
+actually true until now — a long enough delay changed the answer.
+
+**Cost:** None that we can see. The window is set when the proposal starts, along
+with everything else about it.
+
+**Proof it is fixed, rather than assertion.** Four tests cover the close. All four
+were run against the old, unclamped code first and **all four fail there** — the
+fix is load-bearing rather than decorative. Two of them originally passed against
+the broken code and were rewritten: with the observation sitting at the average,
+extending the window changes nothing and the test proves nothing. A test has to
+leave the price somewhere other than the average to have any power.
+
+**What this unblocks:** the Governor can now compare two markets and get the same
+answer no matter who calls it or when, which is the property `finalize()` needs
+to be safe.

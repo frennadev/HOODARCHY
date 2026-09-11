@@ -54,6 +54,8 @@ contract LaggedTwapOracle {
     uint64 public immutable DELAY;
     /// @notice Largest elapsed time that may fund a single step, in seconds.
     uint64 public immutable MAX_STEP_ELAPSED;
+    /// @notice How long the average accumulates once it becomes active.
+    uint64 public immutable WINDOW;
 
     uint64 public startedAt;
     uint64 public lastUpdate;
@@ -63,20 +65,36 @@ contract LaggedTwapOracle {
     uint256 public accumulator;
     /// @notice When accumulation began, i.e. startedAt + DELAY.
     uint64 public twapActiveFrom;
+    /// @notice When accumulation stops, i.e. twapActiveFrom + WINDOW.
+    /// @dev The average is taken over a window that closes on a schedule fixed at
+    ///      `start`, not over "everything until someone asks". Without this the
+    ///      reader picks the end point, and an attacker who has pushed the
+    ///      observation simply declines to finalise: every further second is
+    ///      credited at their manipulated value, so patience converts a bounded,
+    ///      expensive manipulation into an unbounded free one. That is audit
+    ///      finding M-1's shape — state fixed by a transaction somebody chooses to
+    ///      send — and §6.2(b) says to prefer state fixed by elapsed time. It also
+    ///      matters against the sequencer (§6.5): delay can postpone a decision,
+    ///      but it must never change one.
+    uint64 public twapEndsAt;
 
     constructor(
         address source_,
         uint256 maxChangePerSecond_,
         uint64 delay_,
-        uint64 maxStepElapsed_
+        uint64 maxStepElapsed_,
+        uint64 window_
     ) {
         if (source_ == address(0)) revert ZeroAddress();
-        if (maxChangePerSecond_ == 0 || maxStepElapsed_ == 0) revert InvalidConfig();
+        if (maxChangePerSecond_ == 0 || maxStepElapsed_ == 0 || window_ == 0) {
+            revert InvalidConfig();
+        }
 
         SOURCE = IPriceSource(source_);
         MAX_CHANGE_PER_SECOND = maxChangePerSecond_;
         DELAY = delay_;
         MAX_STEP_ELAPSED = maxStepElapsed_;
+        WINDOW = window_;
     }
 
     /// @notice Begins observation, anchored at an explicit initial price.
@@ -91,6 +109,7 @@ contract LaggedTwapOracle {
         startedAt = nowTs;
         lastUpdate = nowTs;
         twapActiveFrom = nowTs + DELAY;
+        twapEndsAt = nowTs + DELAY + WINDOW;
         observation = initialObservation;
 
         emit Started(nowTs, twapActiveFrom, initialObservation);
@@ -131,22 +150,35 @@ contract LaggedTwapOracle {
         emit Observed(observation, spot, elapsed, stepElapsed);
     }
 
-    /// @notice The time-weighted average of the observation since DELAY expired.
+    /// @notice The time-weighted average of the observation across the window.
     /// @dev Includes time elapsed since the last poke, valued at the current
-    ///      observation, so a caller cannot gain by choosing when to read.
+    ///      observation, so a caller cannot gain by choosing when to read. Once
+    ///      `twapEndsAt` passes, the answer is frozen: reading a second later, a
+    ///      day later or a month later returns the identical number.
     function currentTwap() public view returns (uint256) {
         uint64 from = twapActiveFrom;
         if (from == 0) revert NotStarted();
-        uint64 nowTs = uint64(block.timestamp);
-        if (nowTs <= from) revert NoObservationYet();
+
+        // Never read past the close of the window.
+        uint64 at = uint64(block.timestamp);
+        uint64 endsAt = twapEndsAt;
+        if (at > endsAt) at = endsAt;
+        if (at <= from) revert NoObservationYet();
 
         uint256 acc = accumulator;
         uint64 last = lastUpdate;
-        if (nowTs > last) {
+        if (at > last) {
             uint64 chargeFrom = last > from ? last : from;
-            acc += observation * uint256(nowTs - chargeFrom);
+            acc += observation * uint256(at - chargeFrom);
         }
-        return acc / uint256(nowTs - from);
+        return acc / uint256(at - from);
+    }
+
+    /// @notice True once the window has closed and `currentTwap` can no longer
+    ///         move. The Governor requires this before comparing two markets.
+    function isSettled() public view returns (bool) {
+        uint64 endsAt = twapEndsAt;
+        return endsAt != 0 && block.timestamp >= endsAt;
     }
 
     /// @notice Instantaneous price from the configured source.
@@ -154,9 +186,14 @@ contract LaggedTwapOracle {
         return SOURCE.spotPrice();
     }
 
-    /// @dev Credits [max(from, twapActiveFrom), to) at the current observation.
+    /// @dev Credits [max(from, twapActiveFrom), min(to, twapEndsAt)) at the
+    ///      current observation. Clamped at both ends: nothing before the window
+    ///      opens counts, and nothing after it closes counts either — so a poke
+    ///      sent after the window cannot add to a settled average.
     function _accrue(uint64 from, uint64 to) private {
         uint64 activeFrom = twapActiveFrom;
+        uint64 endsAt = twapEndsAt;
+        if (to > endsAt) to = endsAt;
         if (to <= activeFrom) return;
         uint64 chargeFrom = from > activeFrom ? from : activeFrom;
         if (to <= chargeFrom) return;
