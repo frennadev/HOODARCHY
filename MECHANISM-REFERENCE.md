@@ -5,8 +5,8 @@
 > do not fork it into a second document.
 >
 > Status: conditional vault, lagged-price oracle, and V2/V4 price sources built
-> and tested (51 tests). Conditional pools target Uniswap V4 (D17), and V4
-> pre-creation grief is defended and proven on mainnet (D18).
+> and tested (71 tests). Per-proposal conditional pools are our own CPMM, ported
+> from MetaDAO per §5.2 and D19; Uniswap V4 is the parent/spot venue only.
 > Governor, Executor, pool seeding and launchpad still to come.
 > Last verified against chain: 2026-09-09.
 
@@ -271,7 +271,7 @@ Governance is the enforcement mechanism for the raise.
 | USDC quote | USDG is native, 6 dp | Quote = USDG everywhere. Scale explicitly. |
 | Token price = welfare | Stock Tokens + Chainlink exist here | Allow metric ∈ {project token, Stock Token, USDG-NAV vault share} |
 | Squads | Safe is the EVM equivalent | Safe + Zodiac; futarchy module is the only exec role |
-| Custom AMM / OpenBook | Uniswap V2, V3 **and V4** all deployed | Do **not** fork Uniswap at all. The lagged oracle is an external read-only contract behind a swappable price source (D15), so no custom AMM is needed for any version |
+| Custom AMM / OpenBook | Uniswap V2, V3 **and V4** all deployed | Do **not** fork Uniswap for spot — the parent TOKEN/USDG pool uses V4, where the chain's liquidity is. Custom CPMM **only** for the per-proposal conditional pools, per §5.2 and D19: they hold freshly minted tokens with no liquidity to inherit, so a DEX buys nothing and costs a great deal |
 | 3-day window | 100ms blocks, retail + agents | Keep 3 days. Optional 1-day "agent sprint" market type later |
 | Permissionless L1 | Permissionless L2, but Stock Tokens have issuer constraints | Kernel/growth split — futarchy must not touch Stock Token custody or settlement |
 
@@ -644,7 +644,7 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
 
 | | |
 | --- | --- |
-| This project | `~/Documents/robinhood futurachy` — own git repo, no remote yet, no commits yet |
+| This project | `~/Documents/robinhood futurachy` — own git repo, **local only: no remote, nothing pushed anywhere**. Exists on one machine. |
 | Contracts | `packages/contracts` (Foundry; forge-std, OZ, OZ-upgradeable, v3-core, v3-periphery, chainlink submodules) |
 | Chain constants | `packages/contracts/src/config/RobinhoodChain.sol` ↔ `packages/chain/src/addresses.ts` — **keep both in sync**, `pnpm chain:check` re-verifies against live RPC |
 | Product docs | `docs/` (16 files, pre-launch drafts, not legally reviewed) |

@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (51 tests passing — 37 unit, 14 against the live chain):**
+**Built and tested (71 tests passing — 57 unit, 14 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -485,3 +485,82 @@ One thing already settled by it: the borrowed liquidity should sit across the
 narrow band, which is more efficient, but a band the price moves outside of stops
 quoting entirely — and our recorder reads these pools to decide the proposal. A
 market that can silently stop having a price is not one a decision should rest on.
+Full range cannot go out of range, and it is how V2 behaved anyway.
+
+---
+
+## D19 — Back to the MetaDAO model: the pass/fail markets are **our own small
+pool**, not a Uniswap pool
+
+**Decided:** Build the two per-proposal markets as a purpose-built
+constant-product pool with the slow-price logic attached, the way MetaDAO does.
+This reverses D17, narrows D4, and finally does what our own spec said in §5.2
+all along. Uniswap V4 stays — for the project's *main* pool, where it belongs.
+
+**Why — you were right, and the evidence is in our own files.** MetaDAO has run
+96 proposals across 14 organisations on this design. We are porting a system that
+works, not inventing one. Where we departed from it, we paid for it.
+
+The spec never actually agreed with the departure. §5.2 has said from the start:
+*"Do not use vanilla Uniswap V2 for these... We want the observation clamp inside
+the pool."* Yesterday's V4 work rewrote a summary row to say the opposite, and the
+document has been contradicting itself ever since. That is a good signal we drifted
+rather than decided.
+
+**The argument that actually decides it.** You use a big exchange to reach its
+liquidity and its traders. D5 already wrote down that this cannot apply here:
+
+> *conditional tokens are freshly created per proposal, so neither pool type
+> starts with liquidity anyway.*
+
+The pass/fail markets are brand-new tokens minted for one proposal and worthless
+after it resolves. There is no existing liquidity to plug into and no passing
+trade to catch. So we took on all of V4's difficulty in exchange for a benefit
+that structurally cannot exist for these particular pools.
+
+**What that difficulty actually was.** Every one of these came out of the last two
+days, and none of them exists in MetaDAO's design:
+
+| Problem we hit | Why it existed |
+| --- | --- |
+| Reading pool state through assumed storage slots | V4 has no getter; we depend on Uniswap's internal layout |
+| A price readable mid-trade, that nobody could trade against | V4's flash accounting |
+| A pool quoting a confident, fictional price | V4 pools can be created and never funded |
+| Anyone can brick a proposal for gas (D18) | V4 pool creation is open, unrepeatable, and needs no tokens |
+| Shared liquidity is unsolved | V4 keeps everything in one shared vault |
+| Full-range vs concentrated | V4 has ranges at all |
+
+**And the class of bug we inherited from Capital DAO disappears.** H-1 and D18 are
+both the same shape: someone touches a pool before we do. Both are only possible
+because the pool's price depends on state a stranger can reach. If we write the
+pool, we create it ourselves and store the reserves explicitly instead of reading
+token balances — so a donation changes nothing, and nobody can get there first.
+D7's rule stops being a defence we implement and becomes a bug we do not have.
+
+**What D4 got right, and where it went too far.** D4's instinct — *the dangerous
+part of an exchange is the part that holds money* — is sound and stands. But it
+concluded "therefore use someone else's exchange", and that was too broad. The
+conditional pool is not a general exchange: it is a constant-product pool holding
+two throwaway tokens for three days, with no router, no fee tiers, no ranges, and
+no external integrations. It is a few hundred lines. Integrating V4 safely is
+turning out to be more code, and more subtle code, than writing it.
+
+**What we keep, and what it cost.** The V4 price reader keeps its job — the
+project's main TOKEN/USDG pool really is on V4, and we need to read it to anchor a
+proposal's starting price and to price the team's performance tranches. D18's
+finding stays on the record because it applies wherever we touch a V4 pool we did
+not create. The genuinely wasted work is small: roughly a day, and it bought a
+verified map of V4 that we will still use.
+
+**Cost, stated plainly:** we write and must audit a pool that holds real money —
+exactly the thing D4 wanted to avoid. It is small and it is a direct port of a
+design with production history, but the bytecode will be ours and new. That is the
+price of the whole list above going away, and on balance it is worth paying.
+
+**How the slow price attaches.** MetaDAO puts the clamp inside the pool. We keep
+our already-tested recorder as a separate contract and have the pool update it on
+every trade. Behaviourally identical — the observation moves as trading happens,
+so nothing depends on a bot remembering to poke — but the security-critical
+arithmetic stays in the one small contract we have already attacked in tests, and
+the pool cannot corrupt it. The update happens **before** a trade is applied, so
+no one can move the price and collect the movement in the same transaction.
