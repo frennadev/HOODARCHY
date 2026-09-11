@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {FutarchyDeployer} from "../../script/FutarchyDeployer.sol";
+import {console2} from "forge-std/console2.sol";
+
 import {BaseTest} from "../BaseTest.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {ConditionalAmm} from "@capdao/amm/ConditionalAmm.sol";
@@ -154,6 +156,75 @@ contract DeploymentForkTest is BaseTest {
 
         executor.execute(id, calls);
         assertEq(quoteToken.balanceOf(payee), 120_000e6, "the deployed treasury did not pay out");
+    }
+
+    /// @notice What a real deployment costs, measured rather than guessed.
+    /// @dev Also a guard: if the system grows past what a deployer can afford to
+    ///      put on chain, that should fail here rather than be discovered with a
+    ///      half-deployed treasury.
+    function test_measureDeploymentGas() public {
+        FutarchyDeployer.Config memory cfg = FutarchyDeployer.Config({
+            safeSingleton: RobinhoodChain.SAFE_SINGLETON_L2,
+            safeProxyFactory: RobinhoodChain.SAFE_PROXY_FACTORY,
+            baseToken: address(token),
+            quoteToken: address(quoteToken),
+            guardian: guardian,
+            unheldOwner: UNHELD_OWNER,
+            baseToStake: 1_000e18,
+            maxChangePerSecond: RATE,
+            delay: DELAY,
+            window: WINDOW,
+            maxStepElapsed: MAX_STEP,
+            saltNonce: uint256(keccak256("gas-measurement"))
+        });
+
+        uint256 before = gasleft();
+        FutarchyDeployer.deploy(cfg, address(this));
+        uint256 used = before - gasleft();
+
+        console2.log("deployment gas used:", used);
+        console2.log("  at 0.01 gwei (testnet), wei:", used * 10_000_000);
+        console2.log("  at 0.115 gwei (mainnet), wei:", used * 115_000_000);
+
+        assertLt(used, 30_000_000, "deployment has grown beyond a sane budget");
+    }
+
+    /// @notice What using the system costs, phase by phase. The launch is the
+    ///         expensive one: it deploys two pools, two recorders and four
+    ///         conditional tokens in a single transaction.
+    function test_measureProposalGas() public {
+        FutarchyExecutor.Call[] memory calls = new FutarchyExecutor.Call[](1);
+        calls[0] = FutarchyExecutor.Call({
+            target: address(quoteToken),
+            value: 0,
+            data: abi.encodeCall(IERC20.transfer, (payee, 1e6))
+        });
+
+        uint256 g = gasleft();
+        bytes32 id = governor.propose(keccak256("d"), this.hashHelper(calls), false);
+        console2.log("propose      :", g - gasleft());
+
+        g = gasleft();
+        governor.launch(id, SEED_BASE, SEED_QUOTE);
+        console2.log("launch       :", g - gasleft());
+
+        (, LaggedTwapOracle po,) = _markets(id);
+        vm.warp(block.timestamp + 300);
+        g = gasleft();
+        po.poke();
+        console2.log("one poke     :", g - gasleft());
+
+        _crank(id, DELAY);
+        _buyPass(id, 600e6); // the market has to actually say yes
+        _crank(id, WINDOW);
+
+        g = gasleft();
+        governor.finalize(id);
+        console2.log("finalize     :", g - gasleft());
+
+        g = gasleft();
+        executor.execute(id, calls);
+        console2.log("execute      :", g - gasleft());
     }
 
     // ------------------------------------------------------------- helpers
