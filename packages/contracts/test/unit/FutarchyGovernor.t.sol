@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Test} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 
 import {ConditionalAmm} from "../../src/amm/ConditionalAmm.sol";
 import {ConditionalVault} from "../../src/conditional/ConditionalVault.sol";
@@ -87,7 +87,9 @@ contract FutarchyGovernorTest is Test {
 
     function _propose(bool teamSponsored) internal returns (bytes32 id) {
         vm.prank(proposer);
-        id = governor.propose(keccak256("description"), keccak256("actions"), teamSponsored);
+        id = governor.propose(
+            "ipfs://description", keccak256("description"), keccak256("actions"), teamSponsored
+        );
     }
 
     function _launch(bytes32 id) internal {
@@ -294,7 +296,9 @@ contract FutarchyGovernorTest is Test {
         bytes32 actionsHash = this.hashHelper(calls);
 
         vm.prank(proposer);
-        bytes32 id = governor.propose(keccak256("pay the contributor"), actionsHash, false);
+        bytes32 id = governor.propose(
+            "ipfs://pay-the-contributor", keccak256("pay the contributor"), actionsHash, false
+        );
 
         _launch(id);
         _crank(id, DELAY); // nothing counts during the quiet period
@@ -327,7 +331,9 @@ contract FutarchyGovernorTest is Test {
         bytes32 actionsHash = this.hashHelper(calls);
 
         vm.prank(proposer);
-        bytes32 id = governor.propose(keccak256("pay the contributor"), actionsHash, false);
+        bytes32 id = governor.propose(
+            "ipfs://pay-the-contributor", keccak256("pay the contributor"), actionsHash, false
+        );
 
         _launch(id);
         _crank(id, DELAY + WINDOW); // the market is unconvinced
@@ -342,6 +348,105 @@ contract FutarchyGovernorTest is Test {
 
     function hashHelper(FutarchyExecutor.Call[] calldata calls) external view returns (bytes32) {
         return executor.hashActions(calls);
+    }
+
+    // ------------------------------------------------------- indexability
+
+    /// @notice An indexer sees events, not storage. If a proposal cannot be
+    ///         rebuilt from its logs alone, every frontend needs an archive node
+    ///         and a pile of `eth_call`s to show a list of proposals.
+    ///
+    /// @dev These assertions are deliberately about the *event payloads* rather
+    ///      than about behaviour: they are the contract this backend offers to
+    ///      whoever builds on top of it, and they are easy to break by accident.
+    function test_AProposalIsFullyReconstructibleFromEventsAlone() public {
+        vm.recordLogs();
+
+        bytes32 id = _propose(false);
+        _launch(id);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        bool sawProposed;
+        bool sawLaunched;
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (
+                logs[i].topics[0]
+                    == keccak256("Proposed(bytes32,address,string,bytes32,bytes32,bool)")
+            ) {
+                sawProposed = true;
+                assertEq(logs[i].topics[1], id, "proposal id not indexed");
+                (string memory uri,,, bool team) =
+                    abi.decode(logs[i].data, (string, bytes32, bytes32, bool));
+                // Without this a reader can verify a description they were
+                // handed, but can never find one. §3.3: no hidden proposals.
+                assertEq(uri, "ipfs://description", "description uri missing from the log");
+                assertFalse(team);
+            }
+
+            if (
+                logs[i].topics[0]
+                    == keccak256(
+                        "Launched(bytes32,address,address,address,address,address,uint256,uint64,uint64)"
+                    )
+            ) {
+                sawLaunched = true;
+                _assertLaunchedPayload(id, logs[i].data);
+            }
+        }
+
+        assertTrue(sawProposed, "no Proposed event");
+        assertTrue(sawLaunched, "no Launched event");
+    }
+
+    function _assertLaunchedPayload(bytes32 id, bytes memory data) internal view {
+        (
+            address passAmm,
+            address failAmm,
+            address passOracle,
+            address failOracle,
+            uint256 anchor,
+            uint64 opensAt,
+            uint64 closesAt
+        ) = abi.decode(data, (address, address, address, address, uint256, uint64, uint64));
+
+        (address ea, address eb, address eo, address ef) = governor.marketsOf(id);
+        assertEq(passAmm, ea, "pass market wrong in log");
+        assertEq(failAmm, eb, "fail market wrong in log");
+        assertEq(passOracle, eo, "pass oracle missing from log");
+        assertEq(failOracle, ef, "fail oracle missing from log");
+        assertEq(anchor, ANCHOR);
+
+        // "When does this close?" is the first thing any UI asks, and it used to
+        // require reading an immutable over RPC.
+        assertEq(opensAt, uint64(block.timestamp) + DELAY, "trading open time wrong");
+        assertEq(closesAt, opensAt + WINDOW, "trading close time wrong");
+    }
+
+    /// @dev Reserves are emitted on liquidity changes as well as swaps, so an
+    ///      indexer reads pool state rather than accumulating deltas — the
+    ///      latter drifts permanently the moment one event is missed.
+    function test_LiquidityEventsCarryResultingReserves() public {
+        bytes32 id = _propose(false);
+        vm.recordLogs();
+        _launch(id);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        uint256 seen;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (
+                logs[i].topics[0]
+                    == keccak256("LiquidityAdded(address,uint256,uint256,uint256,uint256,uint256)")
+            ) {
+                (,,, uint256 rb, uint256 rq) =
+                    abi.decode(logs[i].data, (uint256, uint256, uint256, uint256, uint256));
+                assertEq(rb, SEED_BASE, "reserveBase missing from LiquidityAdded");
+                assertEq(rq, SEED_QUOTE, "reserveQuote missing from LiquidityAdded");
+                seen++;
+            }
+        }
+        assertEq(seen, 2, "expected one LiquidityAdded per market");
     }
 
     // ---------------------------------------------------------------- cancel

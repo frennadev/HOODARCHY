@@ -66,19 +66,36 @@ contract FutarchyGovernor is IExecutionSource, ReentrancyGuard {
     error MarketsNotSettled(bytes32 proposalId);
     error AlreadyReclaimed(bytes32 proposalId);
 
+    /// @dev `descriptionUri` is emitted but never stored. The log is permanent
+    ///      and readable, which is all an indexer or a reader needs, and keeping
+    ///      a string out of storage keeps proposing cheap. `descriptionHash`
+    ///      stays in storage as the commitment: fetch the URI, hash what you
+    ///      get, and compare. Together they give "no hidden proposals" (§3.3)
+    ///      *and* integrity — a hash alone lets you verify text you were handed
+    ///      but never lets you find it.
     event Proposed(
         bytes32 indexed proposalId,
         address indexed proposer,
+        string descriptionUri,
         bytes32 descriptionHash,
         bytes32 actionsHash,
         bool teamSponsored
     );
+
+    /// @dev Carries the oracles as well as the pools. Without them an indexer
+    ///      has to correlate `MarketFactory.MarketCreated` events by transaction
+    ///      to learn where a proposal's prices are recorded, which is fragile
+    ///      for the sake of two words.
     event Launched(
         bytes32 indexed proposalId,
         address indexed seeder,
         address passAmm,
         address failAmm,
-        uint256 anchorPrice
+        address passOracle,
+        address failOracle,
+        uint256 anchorPrice,
+        uint64 tradingOpensAt,
+        uint64 tradingClosesAt
     );
     event Finalized(
         bytes32 indexed proposalId,
@@ -167,11 +184,16 @@ contract FutarchyGovernor is IExecutionSource, ReentrancyGuard {
     ///        is what makes the thing traded and the thing executed identical.
     /// @dev The stake is returned when trading starts, never slashed. It exists
     ///      so nobody can flood the queue, not to punish losing.
-    function propose(bytes32 descriptionHash, bytes32 actionsHash, bool teamSponsored)
-        external
-        nonReentrant
-        returns (bytes32 proposalId)
-    {
+    /// @param descriptionUri Where to read the proposal. Emitted, not stored.
+    /// @dev The URI is not part of the proposal id: the id commits to the
+    ///      description's *hash*, so rehosting the text somewhere else cannot
+    ///      change which proposal this is.
+    function propose(
+        string calldata descriptionUri,
+        bytes32 descriptionHash,
+        bytes32 actionsHash,
+        bool teamSponsored
+    ) external nonReentrant returns (bytes32 proposalId) {
         proposalId = keccak256(
             abi.encode(address(this), proposalCount++, msg.sender, descriptionHash, actionsHash)
         );
@@ -188,7 +210,9 @@ contract FutarchyGovernor is IExecutionSource, ReentrancyGuard {
             BASE_TOKEN.safeTransferFrom(msg.sender, address(this), BASE_TO_STAKE);
         }
 
-        emit Proposed(proposalId, msg.sender, descriptionHash, actionsHash, teamSponsored);
+        emit Proposed(
+            proposalId, msg.sender, descriptionUri, descriptionHash, actionsHash, teamSponsored
+        );
     }
 
     /// @notice Opens the two markets and starts the clock.
@@ -226,7 +250,17 @@ contract FutarchyGovernor is IExecutionSource, ReentrancyGuard {
             BASE_TOKEN.safeTransfer(p.proposer, stake);
         }
 
-        emit Launched(proposalId, msg.sender, address(p.passAmm), address(p.failAmm), anchor);
+        emit Launched(
+            proposalId,
+            msg.sender,
+            address(p.passAmm),
+            address(p.failAmm),
+            address(p.passOracle),
+            address(p.failOracle),
+            anchor,
+            p.passOracle.twapActiveFrom(),
+            p.passOracle.twapEndsAt()
+        );
     }
 
     /// @notice Reads both settled averages and decides.

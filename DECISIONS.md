@@ -291,7 +291,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (125 tests passing — 100 unit, 25 against the live chain):**
+**Built and tested (129 tests passing — 102 unit, 27 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it

@@ -143,8 +143,12 @@ contract DeploymentForkTest is BaseTest {
             data: abi.encodeCall(IERC20.transfer, (payee, 120_000e6))
         });
 
-        bytes32 id =
-            governor.propose(keccak256("pay the contributor"), this.hashHelper(calls), false);
+        bytes32 id = governor.propose(
+            "ipfs://pay-the-contributor",
+            keccak256("pay the contributor"),
+            this.hashHelper(calls),
+            false
+        );
         governor.launch(id, SEED_BASE, SEED_QUOTE);
 
         _crank(id, DELAY);
@@ -201,7 +205,7 @@ contract DeploymentForkTest is BaseTest {
         });
 
         uint256 g = gasleft();
-        bytes32 id = governor.propose(keccak256("d"), this.hashHelper(calls), false);
+        bytes32 id = governor.propose("ipfs://d", keccak256("d"), this.hashHelper(calls), false);
         console2.log("propose      :", g - gasleft());
 
         g = gasleft();

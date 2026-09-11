@@ -4,7 +4,7 @@
 > outlive any individual work session. If something here goes stale, edit it —
 > do not fork it into a second document.
 >
-> Status: the full mechanism is built and tested (127 tests, 27 of them against
+> Status: the full mechanism is built and tested (129 tests, 27 of them against
 > a live chain) — conditional vault, lagged-price oracle, conditional AMM,
 > Governor and Executor. **Deployed to Robinhood Chain mainnet and run end to
 > end on 2026-09-11**: a market decided a proposal and a Safe treasury paid out.

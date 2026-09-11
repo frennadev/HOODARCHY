@@ -41,10 +41,20 @@ contract ConditionalAmm is IPriceSource, ReentrancyGuard {
     error SlippageExceeded(uint256 got, uint256 minimum);
 
     event LiquidityAdded(
-        address indexed provider, uint256 baseIn, uint256 quoteIn, uint256 sharesMinted
+        address indexed provider,
+        uint256 baseIn,
+        uint256 quoteIn,
+        uint256 sharesMinted,
+        uint256 reserveBase,
+        uint256 reserveQuote
     );
     event LiquidityRemoved(
-        address indexed provider, uint256 baseOut, uint256 quoteOut, uint256 sharesBurned
+        address indexed provider,
+        uint256 baseOut,
+        uint256 quoteOut,
+        uint256 sharesBurned,
+        uint256 reserveBase,
+        uint256 reserveQuote
     );
     event Swapped(
         address indexed trader,
@@ -157,7 +167,7 @@ contract ConditionalAmm is IPriceSource, ReentrancyGuard {
         BASE_TOKEN.safeTransferFrom(msg.sender, address(this), baseAmount);
         QUOTE_TOKEN.safeTransferFrom(msg.sender, address(this), quoteAmount);
 
-        emit LiquidityAdded(msg.sender, baseAmount, quoteAmount, shares);
+        emit LiquidityAdded(msg.sender, baseAmount, quoteAmount, shares, reserveBase, reserveQuote);
     }
 
     /// @notice Burns shares and returns a proportional slice of both reserves.
@@ -188,7 +198,7 @@ contract ConditionalAmm is IPriceSource, ReentrancyGuard {
         if (baseOut > 0) BASE_TOKEN.safeTransfer(msg.sender, baseOut);
         if (quoteOut > 0) QUOTE_TOKEN.safeTransfer(msg.sender, quoteOut);
 
-        emit LiquidityRemoved(msg.sender, baseOut, quoteOut, shares);
+        emit LiquidityRemoved(msg.sender, baseOut, quoteOut, shares, reserveBase, reserveQuote);
     }
 
     // ------------------------------------------------------------------ swaps

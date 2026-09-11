@@ -39,7 +39,9 @@ contract LaggedTwapOracle {
     error AlreadyStarted();
     error NoObservationYet();
 
-    event Started(uint64 startedAt, uint64 twapActiveFrom, uint256 initialObservation);
+    event Started(
+        uint64 startedAt, uint64 twapActiveFrom, uint64 twapEndsAt, uint256 initialObservation
+    );
     event Observed(uint256 observation, uint256 spot, uint64 elapsed, uint64 stepElapsed);
 
     /// @notice Price is expressed as quote units per WAD of base.
@@ -112,7 +114,7 @@ contract LaggedTwapOracle {
         twapEndsAt = nowTs + DELAY + WINDOW;
         observation = initialObservation;
 
-        emit Started(nowTs, twapActiveFrom, initialObservation);
+        emit Started(nowTs, twapActiveFrom, twapEndsAt, initialObservation);
     }
 
     /// @notice Credits elapsed time and lets the observation step toward spot.
