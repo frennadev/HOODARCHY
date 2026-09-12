@@ -8,6 +8,12 @@ keystore/
 # --- foundry -----------------------------------------------------------------
 packages/contracts/out/
 packages/contracts/cache/
+# Running forge with --root from the repo root writes here instead. The
+# invariant failure cache in particular must not be committed: a stale entry
+# makes a later run replay a sequence for a bug that has already been fixed.
+/cache/
+/out/
+/broadcast/
 packages/contracts/broadcast/
 !packages/contracts/broadcast/**/dry-run/
 packages/contracts/lib/
