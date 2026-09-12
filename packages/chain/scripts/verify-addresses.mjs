@@ -75,10 +75,28 @@ async function rpc(method, params = []) {
 
 const codeSize = async (addr) => ((await rpc("eth_getCode", [addr, "latest"])).length - 2) / 2;
 
+/**
+ * Never print a provider URL in full: the API key lives in the path, and CI logs
+ * on a public repo are world-readable.
+ *
+ * GitHub Actions does redact exact secret matches, but that is one fragile
+ * layer — it fails the moment a value is transformed, or if the secret is
+ * stored as the bare key and the URL assembled around it. Masking here holds
+ * regardless of how the secret happens to be configured.
+ */
+function redact(url) {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}${u.pathname.replace(/\/[A-Za-z0-9_-]{16,}/g, "/***")}`;
+  } catch {
+    return "(unparseable url)";
+  }
+}
+
 async function main() {
   const chainId = parseInt(await rpc("eth_chainId"), 16);
   const block = parseInt(await rpc("eth_blockNumber"), 16);
-  console.log(`RPC       ${RPC}`);
+  console.log(`RPC       ${redact(RPC)}`);
   console.log(`chainId   ${chainId}`);
   console.log(`block     ${block.toLocaleString()}\n`);
 
