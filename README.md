@@ -72,8 +72,25 @@ pnpm verify        # everything that needs no credentials
 ```
 
 `pnpm verify:chain` additionally runs the fork tests and address checks against
-mainnet, and needs an **archive** RPC in `RH_MAINNET_RPC_URL` — the public
-endpoint loses state within about a thousand blocks.
+mainnet, using `RH_MAINNET_RPC_URL`.
+
+The public endpoint `https://rpc.mainnet.chain.robinhood.com` is enough for most
+of it. It retains roughly 40 hours of state — about 1.4M blocks at 100ms — so it
+serves the address checks, both deployment guards, and the fork tests run at the
+tip:
+
+```bash
+RH_MAINNET_RPC_URL=https://rpc.mainnet.chain.robinhood.com FORK_BLOCK=0 \
+  forge test --root packages/contracts --match-path 'test/fork/*'
+```
+
+What it cannot serve is the **default pinned block** (`FORK_BLOCK_DEFAULT` in
+[BaseTest.sol](packages/contracts/test/BaseTest.sol)), because any pin older than
+that retention window has been dropped. Pinning is what makes a fork-test failure
+mean *our code changed* rather than *the chain moved*, so it is worth keeping —
+but it permanently requires an **archive** RPC, and the pin ages out of the public
+node about two days after it is set. Run pinned against an archive endpoint, or
+pass `FORK_BLOCK=0` and accept that the chain is now a variable.
 
 ## What is not built
 
