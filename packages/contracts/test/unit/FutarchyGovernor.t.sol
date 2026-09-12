@@ -144,6 +144,18 @@ contract FutarchyGovernorTest is Test {
         vm.stopPrank();
     }
 
+    /// @dev Redeems only when there is something to redeem. The vault reverts
+    ///      on an empty redemption on purpose — it tells a holder of only the
+    ///      losing side that they have nothing, rather than quietly succeeding
+    ///      with a zero transfer — so a caller sweeping positions has to ask.
+    function _redeemIfHolding(address who, bytes32 id, address underlying) internal {
+        (address pass, address fail) = vault.conditionalTokens(id, underlying);
+        address winner = vault.winnerOf(id) == Outcome.Pass ? pass : fail;
+        if (IERC20(winner).balanceOf(who) == 0) return;
+        vm.prank(who);
+        vault.redeem(id, underlying);
+    }
+
     // --------------------------------------------------------------- propose
 
     function test_ProposeLocksTheStake() public {
@@ -515,6 +527,105 @@ contract FutarchyGovernorTest is Test {
         // minimum shares keep a sliver behind.
         assertApproxEqRel(token.balanceOf(seeder), baseBefore, 1e15, "base not returned");
         assertApproxEqRel(usdg.balanceOf(seeder), quoteBefore, 1e15, "quote not returned");
+    }
+
+    /// @notice Reclaiming after the markets have actually been traded.
+    ///
+    /// @dev Every other reclaim test cranks with nobody trading, so the pools
+    ///      come back holding exactly what went in and the arithmetic is
+    ///      trivial. After real trading the LP position has rebalanced — less of
+    ///      one side, more of the other — and the winning conditionals have to
+    ///      be redeemed while the losing ones are worthless. That is the path
+    ///      that moves real money, and it had never executed.
+    function test_SeedIsRecoverableAfterTheMarketsHaveTraded() public {
+        bytes32 id = _propose(false);
+        uint256 baseBefore = token.balanceOf(seeder);
+        uint256 quoteBefore = usdg.balanceOf(seeder);
+
+        _launch(id);
+        _crank(id, DELAY);
+        _buyPass(id, 600e6); // someone takes a real position
+        _crank(id, WINDOW);
+        governor.finalize(id);
+        assertEq(uint256(governor.stateOf(id)), uint256(FutarchyGovernor.State.Passed));
+
+        vm.prank(seeder);
+        (uint256 baseOut, uint256 quoteOut) = governor.reclaimSeed(id);
+
+        assertGt(baseOut, 0, "seeder recovered no base at all");
+        assertGt(quoteOut, 0, "seeder recovered no quote at all");
+
+        // The trader bought the pass token with pass-quote, so the winning pool
+        // ends holding less base and more quote than it opened with. The seeder
+        // wears that as an LP, exactly as they would in any pool.
+        assertLt(baseOut, SEED_BASE, "base should have fallen: the trader bought it");
+        assertGt(quoteOut, SEED_QUOTE, "quote should have risen: the trader paid it in");
+
+        assertEq(token.balanceOf(seeder), baseBefore - SEED_BASE + baseOut);
+        assertEq(usdg.balanceOf(seeder), quoteBefore - SEED_QUOTE + quoteOut);
+    }
+
+    /// @notice After every holder redeems, only dust remains — and the dust has
+    ///         a known cause.
+    ///
+    /// @dev This test originally asserted an exact zero and failed, which turned
+    ///      out to be correct behaviour nobody had written down. `ConditionalAmm`
+    ///      locks 1,000 MINIMUM_SHARES to address(0) on the first deposit, the
+    ///      standard first-depositor protection. The inventory backing those
+    ///      shares can never be withdrawn, so its conditional tokens are never
+    ///      redeemed, so that much underlying stays locked in the vault forever.
+    ///
+    ///      It is genuinely tiny — the dead fraction is MINIMUM_SHARES divided by
+    ///      sqrt(base * quote), about 7e-13 here, so roughly 7e-10 of a token per
+    ///      proposal. Worth asserting a bound rather than deleting the test: if
+    ///      this residue ever becomes large, something has gone wrong with share
+    ///      accounting and this is where it shows.
+    function test_OnlyDustRemainsOnceEveryoneHasRedeemed() public {
+        bytes32 id = _propose(false);
+        _launch(id);
+        _crank(id, DELAY);
+        _buyPass(id, 600e6);
+        _crank(id, WINDOW);
+        governor.finalize(id);
+
+        vm.prank(seeder);
+        governor.reclaimSeed(id);
+
+        _redeemIfHolding(trader, id, address(token));
+        _redeemIfHolding(trader, id, address(usdg));
+
+        uint256 baseLeft = vault.lockedOf(id, address(token));
+        uint256 quoteLeft = vault.lockedOf(id, address(usdg));
+
+        // A billionth of the seed is a generous ceiling on "dust". The real
+        // figure is a thousand times smaller again.
+        assertLt(baseLeft, SEED_BASE / 1e9, "far more base stranded than the locked shares explain");
+        assertLt(
+            quoteLeft, SEED_QUOTE / 1e6, "far more quote stranded than the locked shares explain"
+        );
+
+        // Whatever is left must still be honestly backed, not phantom.
+        assertEq(
+            token.balanceOf(address(vault)), baseLeft, "vault holdings disagree with its ledger"
+        );
+        assertEq(
+            usdg.balanceOf(address(vault)), quoteLeft, "vault holdings disagree with its ledger"
+        );
+    }
+
+    /// @notice The same, when the market says no. The losing side's inventory is
+    ///         worthless, and the seeder recovers through the fail pool instead.
+    function test_SeedIsRecoverableWhenTheProposalFails() public {
+        bytes32 id = _propose(false);
+        _launch(id);
+        _crank(id, DELAY);
+        _buyPass(id, 600e6); // not enough to clear the 3% margin on its own
+        _crank(id, WINDOW);
+        governor.finalize(id);
+
+        vm.prank(seeder);
+        (uint256 baseOut, uint256 quoteOut) = governor.reclaimSeed(id);
+        assertGt(baseOut + quoteOut, 0, "seeder recovered nothing");
     }
 
     function test_OnlyTheSeederReclaims() public {

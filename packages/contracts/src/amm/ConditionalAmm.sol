@@ -80,6 +80,18 @@ contract ConditionalAmm is IPriceSource, ReentrancyGuard {
     /// @dev Dead shares from the first deposit, so `totalShares` can never return
     ///      to zero while reserves remain and the share price cannot be
     ///      manipulated by emptying the pool.
+    ///
+    ///      **Consequence worth knowing:** the inventory backing these shares can
+    ///      never be withdrawn, so for a conditional pool it strands that much
+    ///      underlying in the vault permanently — the conditional tokens holding
+    ///      it are never redeemed. The dead fraction is MINIMUM_SHARES divided by
+    ///      sqrt(base * quote): seeding 1,000 tokens against 2,000 quote leaves
+    ///      roughly 7e-10 of a token behind, per proposal, forever.
+    ///
+    ///      Negligible, and the standard price of first-depositor protection, but
+    ///      it means a proposal never returns *exactly* what was put in. A test
+    ///      asserts the residue stays at that scale, because a large one would
+    ///      mean share accounting had gone wrong.
     uint256 private constant MINIMUM_SHARES = 1000;
 
     IERC20 public immutable BASE_TOKEN;
