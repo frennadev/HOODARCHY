@@ -21,6 +21,13 @@ the mechanism works on a real chain, not as anything to put money into.
 
 First event at block **60,276,901**; the indexer starts at 60,276,500.
 
+**Still current.** Verified 2026-09-12 by comparing the deployed runtime bytecode
+against this repo's build, masking the immutables baked in at deploy time. All
+six contracts — governor, vault, executor, factory, and the live proposal's
+market and oracle — match byte for byte. Source has changed since the deployment,
+but only comments, so no redeploy is needed. `pnpm deployment:bytecode` re-checks
+this, and the daily drift workflow runs it.
+
 Parameters: dark period 60s, trading window 300s, rate limit 20,000/s, stake
 1,000 FTT, no guardian. Production values are 24h / 72h (§7).
 

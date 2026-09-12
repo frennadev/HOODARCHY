@@ -24,7 +24,8 @@
     "typecheck": "tsc --noEmit",
     "deployment:check": "node scripts/check-deployment-abi.mjs",
     "verify": "pnpm fmt:check && pnpm build && pnpm abis:check && pnpm typecheck && pnpm --filter @hoodarchy/indexer exec tsc --noEmit && pnpm docs:check && forge test --root packages/contracts --no-match-path 'test/fork/*'",
-    "verify:chain": "pnpm chain:check && pnpm test:fork && pnpm test:fork:drift && pnpm deployment:check"
+    "verify:chain": "pnpm chain:check && pnpm test:fork && pnpm test:fork:drift && pnpm deployment:check && pnpm deployment:bytecode",
+    "deployment:bytecode": "node scripts/check-deployed-bytecode.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

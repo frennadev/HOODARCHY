@@ -77,3 +77,12 @@ jobs:
         run: |
           forge build --root packages/contracts
           node scripts/check-deployment-abi.mjs
+
+      # Stronger than the ABI check, which only asks whether we can still decode
+      # what a deployment emits — it would pass against a contract whose
+      # internals had been rewritten behind matching event signatures. This
+      # compares the runtime bytecode, masking the immutables that are baked in
+      # at deploy time and appear as placeholders in the compiled artifact.
+      - name: Deployed bytecode still matches this repo
+        if: steps.secret.outputs.present == 'true'
+        run: node scripts/check-deployed-bytecode.mjs
