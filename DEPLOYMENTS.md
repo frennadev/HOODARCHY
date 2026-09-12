@@ -81,6 +81,31 @@ Defences checked against it live: replay reverted `AlreadyExecuted`
 (`0xb4c3ae99`), and calling the Safe to attach a second module reverted before
 the target check was even reached.
 
+## Verifying these contracts on the explorer
+
+Automated verification does not work — the mainnet explorer's API is behind a
+Cloudflare challenge (see `.env.example`). It has to go through the web UI, which
+wants Standard JSON Input rather than flattened source, because two of our
+compiler settings are unusual and flattening loses them: `bytecodeHash: none` and
+`appendCBOR: false`. If the form appends metadata the bytecode will not match and
+the failure says nothing useful.
+
+Regenerate the inputs with:
+
+```
+forge verify-contract --show-standard-json-input \
+  0x0000000000000000000000000000000000000001 \
+  src/governance/FutarchyGovernor.sol:FutarchyGovernor \
+  > FutarchyGovernor.json
+```
+
+(The address is ignored for this flag; any valid one works.) Constructor
+arguments can be rebuilt with `cast abi-encode` from the values each contract
+reports about itself — the governor exposes `BASE_TOKEN`, `QUOTE_TOKEN`,
+`MARKET_FACTORY`, `GUARDIAN`, `BASE_TO_STAKE`, `DELAY` and `WINDOW`, the executor
+its `SAFE`, the vault its `governor`, and the oracles all five of theirs. Reading
+them back beats trusting a deployment note.
+
 ## Known gap in both deployments
 
 **The treasury owner was never handed over.** The final step of

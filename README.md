@@ -77,8 +77,16 @@ endpoint loses state within about a thousand blocks.
 
 ## What is not built
 
-Shared liquidity, the launchpad, and the web app. Two mechanism parameters still
-have placeholder values rather than real ones — see §11 of the reference.
+The launchpad and the web app.
+
+Shared liquidity is **not** on this list any more, though it was for most of the
+project's life: anyone can already deepen both books on a live proposal, and
+quadrupling depth cuts a trade's price impact from +69% to +16% (D27). What is
+missing there is a router to make it one transaction instead of six.
+
+Two mechanism parameters still hold placeholder values — the observation rate
+limit and the gap-freeze threshold. The deployed demo runs at 20,000/s, which is
+far too fast for real money. See §11 of the reference.
 
 ## Licence
 
