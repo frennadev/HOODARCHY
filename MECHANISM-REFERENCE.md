@@ -4,7 +4,7 @@
 > outlive any individual work session. If something here goes stale, edit it —
 > do not fork it into a second document.
 >
-> Status: the full mechanism is built and tested (129 tests, 27 of them against
+> Status: the full mechanism is built and tested (192 tests, 27 of them against
 > a live chain) — conditional vault, lagged-price oracle, conditional AMM,
 > Governor and Executor. **Deployed to Robinhood Chain mainnet and run end to
 > end on 2026-09-11**: a market decided a proposal and a Safe treasury paid out.
@@ -342,13 +342,31 @@ on every swap or crank:
 Crank is permissionless. The indexer should crank every block during live
 proposals — 100ms blocks make this cheap.
 
-**Shared liquidity — build this on day one.** MetaDAO bolted it on late and it
-remains their biggest practical complaint. Keep one parent `TOKEN/USDG` pool. On
-proposal launch the vault borrows LP by splitting parent reserves into complete
-sets and placing them in both decision pools. On resolve the winning side's
-inventory merges back. Traders see deep books; LPs do not have to choose which
-universe to underwrite. **This is the difference between a toy and something
-that can price a $2M treasury spend.**
+**Shared liquidity — already works (D27).** This paragraph previously described
+borrowing from the parent pool: *"the vault borrows LP by splitting parent
+reserves into complete sets and placing them in both decision pools."*
+
+**That mechanism is impossible and was never built.** A parent pool's reserves
+belong to its LPs, and D19 put the parent on Uniswap V4, where nothing lets a
+third party relocate other people's capital. The paragraph was written before we
+decided where the parent lives, and the two never got reconciled.
+
+What is true instead: **anyone can deepen both books on a live proposal, and
+always could.** `ConditionalAmm.addLiquidity` has no access control, and a
+complete set is obtainable by anyone. One split of collateral funds both
+markets, because splitting X yields X of both conditionals — so the fail book is
+never the thin one, and depth costs half what funding two markets separately
+would.
+
+Measured: quadrupling a book's depth cuts the price impact of a 600-unit trade
+from +69% to +16%. Manipulation cost scales with depth exactly as intended, and
+the capital comes back through the ordinary AMM and vault paths with no
+privileged route.
+
+What is genuinely missing is **ergonomics, not capability**: deepening both books
+takes six transactions today (two splits, two approvals, two deposits) and
+unwinding takes four. A router would make it one each. Nobody has been unable to
+provide liquidity; it has just been tedious and undocumented.
 
 ### 5.3 Governor — **BUILT (D22)**
 
@@ -622,7 +640,7 @@ Fork tests against real Uniswap run from step 2 onward, not at the end (§6.2d).
 
 | Risk | Status |
 | --- | --- |
-| Thin-market capture | Real until shared LP ships. Mitigated by §5.2, not eliminated. |
+| Thin-market capture | Mitigated: anyone can deepen both books on a live proposal, and depth cuts price impact proportionally (D27). Not eliminated — it still depends on somebody choosing to, and the incentive to do so is untested in the wild. |
 | Goodhart on token price | Inherent to the metric choice. Same as MetaDAO. Disclose. |
 | Sequencer trust | Mitigated by time-caps, **not eliminated**. Disclose plainly. |
 | US persons / securities | A launchpad governing a Stock-Token derivative is a lawyer problem. Keep Stock Tokens as **metric**, not as the fundraising asset, unless counsel says otherwise. |

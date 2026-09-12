@@ -298,7 +298,7 @@ consequence, rather than trying to hide the addresses.
 
 ## D14 — What we built first, and what we deliberately left out
 
-**Built and tested (129 tests passing — 102 unit, 27 against the live chain):**
+**Built and tested (192 tests passing — 165 unit and invariant, 27 against the live chain):**
 
 - **The vault** — takes in a token, gives out matched PASS and FAIL claims, and
   swaps the winning claim back for the real token after the decision. The rule it
@@ -918,3 +918,57 @@ at the superseded one it fails and names both stale event hashes. Without RPC
 credentials it skips rather than failing, so it cannot punish a run that had no
 way to perform it. All three exit codes were checked, because a check that
 reports a failure but exits zero is worse than no check.
+
+---
+
+## D27 — Shared liquidity was never missing. The spec's mechanism was impossible
+
+**What happened:** shared liquidity has been on the "not built" list since the
+start, and §5.2 named it *"the difference between a toy and something that can
+price a $2M treasury spend."* Going to build it turned up two things.
+
+**First, the specified mechanism cannot work.** §5.2 said the vault would borrow
+liquidity *"by splitting parent reserves into complete sets."* But a parent
+pool's reserves belong to its LPs, and D19 put the parent on Uniswap V4 — where
+nothing lets a third party relocate other people's capital. The paragraph was
+written before we decided where the parent pool lives, and nobody reconciled the
+two. Building it would have meant discovering this a day in.
+
+**Second, and better: the capability already exists.** `ConditionalAmm.addLiquidity`
+has no access control, and anyone can obtain a complete set. So anyone can deepen
+both books on a live proposal, today, and always could. It was undemonstrated
+rather than absent.
+
+Four tests now show it: a stranger deepening both books on a live proposal,
+recovering their capital afterwards through ordinary paths, and the launcher's
+own reclaim correctly taking only its share rather than the whole pool.
+
+**The measurement that matters.** Quadrupling a book's depth cuts the price
+impact of the same trade from **+69% to +16%**:
+
+```
+thin book (1,000 / 2,000)   600 quote in  ->  price 2.000 -> 3.378
+deep book (4,000 / 8,000)   600 quote in  ->  price 2.000 -> 2.311
+```
+
+Manipulation cost scales with depth, which is the property the whole design
+rests on and which had never actually been measured.
+
+**Why one deposit is enough for both markets.** Splitting X collateral yields X
+of the pass token *and* X of the fail token. The same capital therefore funds
+both books to equal depth — which is why the fail market is never the thin one,
+and why depth here costs half what it would if the two markets had to be funded
+separately. That was already true of the launch seed (D22); it turns out to be
+true of everyone else's contribution too.
+
+**What is actually missing: ergonomics.** Deepening both books takes six
+transactions and unwinding takes four. A router would make each one. Nobody has
+been *unable* to provide liquidity — it has been tedious and undocumented, which
+is a different problem with a much smaller fix.
+
+**What we did not build, and why.** The alternative was letting the Governor draw
+seed capital from the treasury automatically. That needs a path for the Governor
+to move treasury funds *without a passed proposal* — bounded, but a deliberate
+hole in "only the market can spend," which is the entire product claim. Not worth
+opening while the permissionless path works. If deep books turn out not to
+materialise in practice, that is the moment to reconsider, knowing the cost.
